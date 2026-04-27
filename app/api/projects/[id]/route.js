@@ -29,8 +29,9 @@ export async function GET(_request, { params }) {
   const expenses = await supa("/expenses", {
     query: {
       project_id: `eq.${projectId}`,
-      select: "id,project_id,description,amount,entered_amount,payer_id,borrower_id,type,created_at",
-      order: "created_at.desc",
+      select:
+        "id,project_id,description,amount,entered_amount,payer_id,borrower_id,type,expense_date,created_at",
+      order: "expense_date.desc,created_at.desc",
     },
   });
 
@@ -49,6 +50,7 @@ export async function GET(_request, { params }) {
     payerId: e.payer_id,
     borrowerId: e.borrower_id,
     type: e.type,
+    expenseDate: e.expense_date || String(e.created_at || "").slice(0, 10),
     createdAt: e.created_at,
     payerName: userById.get(e.payer_id)?.name || `User ${e.payer_id}`,
     borrowerName: userById.get(e.borrower_id)?.name || `User ${e.borrower_id}`,

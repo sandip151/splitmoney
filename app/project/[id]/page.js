@@ -25,6 +25,7 @@ export default function ProjectPage() {
   const [allUsers, setAllUsers] = useState([]);
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().slice(0, 10));
 
   const availableToAdd = useMemo(() => {
     if (!state) return [];
@@ -97,10 +98,56 @@ export default function ProjectPage() {
   }
 
   const members = state.members || [];
+  const canAddExpense = members.length === 2;
+  const [memberA, memberB] = members;
+
+  const expenseOptions = canAddExpense
+    ? [
+        {
+          value: "A_PAID_SPLIT",
+          label: `🤝 ${memberA.name} paid, split 50/50`,
+        },
+        {
+          value: "B_PAID_SPLIT",
+          label: `🤝 ${memberB.name} paid, split 50/50`,
+        },
+        {
+          value: "B_OWE_FULL",
+          label: `🎯 ${memberA.name} paid fully for ${memberB.name}`,
+        },
+        {
+          value: "A_OWE_FULL",
+          label: `🎯 ${memberB.name} paid fully for ${memberA.name}`,
+        },
+      ]
+    : [];
+
+  const topSettlement = state.settlements?.[0];
+  const summaryText =
+    !members.length || !state.settlements.length
+      ? "All settled"
+      : state.settlements.length === 1
+      ? `${topSettlement.fromUserName} owes Rs ${topSettlement.amount.toFixed(
+          2
+        )} to ${topSettlement.toUserName}`
+      : "Multiple pending settlements";
+  const summaryClass = !members.length || !state.settlements.length ? "good" : "bad";
+
+  const groupedExpenses = (state.expenses || []).reduce((acc, exp) => {
+    const key = exp.expenseDate || String(exp.createdAt || "").slice(0, 10) || "Unknown date";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(exp);
+    return acc;
+  }, {});
+
+  const orderedDates = Object.keys(groupedExpenses).sort((a, b) => b.localeCompare(a));
 
   return (
     <>
       <h1>Project: {state.project.name}</h1>
+      <p className={summaryClass}>
+        <strong>{summaryText}</strong>
+      </p>
 
       <div className="card">
         <h3>Project Members</h3>
@@ -141,30 +188,36 @@ export default function ProjectPage() {
         <form onSubmit={addExpense}>
           <input name="description" placeholder="Description" required />
           <input name="amount" type="number" step="0.01" min="0.01" placeholder="Amount" required />
-          <select name="memberAId" defaultValue={members[0]?.id ?? ""}>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
+          <input
+            name="expenseDate"
+            type="date"
+            value={expenseDate}
+            onChange={(e) => setExpenseDate(e.target.value)}
+            required
+          />
+          <input type="hidden" name="memberAId" value={memberA?.id ?? ""} />
+          <input type="hidden" name="memberBId" value={memberB?.id ?? ""} />
+          <select name="type" defaultValue="A_PAID_SPLIT" disabled={!canAddExpense}>
+            {canAddExpense ? (
+              expenseOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))
+            ) : (
+              <option value="">Exactly 2 members required</option>
+            )}
           </select>
-          <select name="memberBId" defaultValue={members[1]?.id ?? members[0]?.id ?? ""}>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
-          <select name="type" defaultValue="A_PAID_SPLIT">
-            <option value="A_PAID_SPLIT">UserA paid and split equally</option>
-            <option value="A_OWE_FULL">UserA Owe the full amount</option>
-            <option value="B_PAID_SPLIT">UserB paid and split equally</option>
-            <option value="B_OWE_FULL">UserB owe the full amount</option>
-          </select>
-          <button type="submit">Add Expense</button>
+          <button type="submit" disabled={!canAddExpense}>
+            Add Expense
+          </button>
         </form>
-        <p className="muted">Pick UserA/UserB and one of the 4 options.</p>
-        {members.length < 2 && <p className="bad">Add at least 2 members to create transactions.</p>}
+        <p className="muted">Add description, amount, date, and choose transaction type.</p>
+        {!canAddExpense && (
+          <p className="bad">
+            This flow is optimized for 2-member projects. Please keep exactly 2 members to add transactions.
+          </p>
+        )}
       </div>
 
       <div className="card">
@@ -213,22 +266,38 @@ export default function ProjectPage() {
         {state.expenses.length === 0 ? (
           <div className="muted">No transactions yet.</div>
         ) : (
-          <ul>
-            {state.expenses.map((exp) => (
-              <li key={exp.id}>
-                <div>
-                  <strong>{exp.description}</strong>
-                </div>
-                <div className="muted">
-                  Entered: Rs {Number(exp.enteredAmount).toFixed(2)} | Owed transfer: Rs{" "}
-                  {Number(exp.amount).toFixed(2)}
-                </div>
-                <div>
-                  {exp.borrowerName} owes {exp.payerName}
-                </div>
-              </li>
-            ))}
-          </ul>
+          orderedDates.map((date) => (
+            <div key={date} style={{ marginBottom: "12px" }}>
+              <div
+                className="muted"
+                style={{
+                  background: "#f3f4f6",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "6px",
+                  padding: "6px 10px",
+                  marginBottom: "6px",
+                }}
+              >
+                <strong>{new Date(date).toLocaleDateString()}</strong>
+              </div>
+              <ul>
+                {groupedExpenses[date].map((exp) => (
+                  <li key={exp.id}>
+                    <div>
+                      <strong>{exp.description}</strong>
+                    </div>
+                    <div className="muted">
+                      Total: Rs {Number(exp.enteredAmount).toFixed(2)} | Share transfer: Rs{" "}
+                      {Number(exp.amount).toFixed(2)}
+                    </div>
+                    <div>
+                      {exp.borrowerName} owes {exp.payerName}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
         )}
       </div>
     </>

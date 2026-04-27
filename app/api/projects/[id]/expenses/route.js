@@ -9,12 +9,14 @@ export async function POST(request, { params }) {
   const enteredAmount = Number(body.amount);
   const description = String(body.description || "").trim();
   const type = String(body.type || "");
+  const expenseDate = String(body.expenseDate || "").trim();
   const memberAId = Number(body.memberAId);
   const memberBId = Number(body.memberBId);
 
   if (!enteredAmount || enteredAmount <= 0) {
     return NextResponse.json({ error: "Amount must be greater than 0" }, { status: 400 });
   }
+  if (!expenseDate) return NextResponse.json({ error: "Expense date is required" }, { status: 400 });
   if (!description) return NextResponse.json({ error: "Description is required" }, { status: 400 });
   if (!memberAId || !memberBId) return NextResponse.json({ error: "Please choose two users" }, { status: 400 });
   if (memberAId === memberBId) return NextResponse.json({ error: "Please choose two different users" }, { status: 400 });
@@ -64,6 +66,7 @@ export async function POST(request, { params }) {
       payer_id: payerId,
       borrower_id: borrowerId,
       type,
+      expense_date: expenseDate,
     },
     preferReturn: true,
   });
@@ -79,6 +82,7 @@ export async function POST(request, { params }) {
       payerId: e.payer_id,
       borrowerId: e.borrower_id,
       type: e.type,
+      expenseDate: e.expense_date || expenseDate,
       createdAt: e.created_at,
     },
     { status: 201 }
