@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { supa, toInFilter } from "@/lib/supabaseRest";
 
 export async function POST(request, { params }) {
-  const projectId = Number(params.id);
+  const { id } = await params;
+  const projectId = Number(id);
   const body = await request.json().catch(() => ({}));
 
   const enteredAmount = Number(body.amount);

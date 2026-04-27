@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { supa } from "@/lib/supabaseRest";
 
 export async function DELETE(_request, { params }) {
-  const projectId = Number(params.id);
-  const userId = Number(params.userId);
+  const { id, userId } = await params;
+  const projectId = Number(id);
+  const resolvedUserId = Number(userId);
 
   const hasExpense = await supa("/expenses", {
     query: {
       project_id: `eq.${projectId}`,
-      or: `(payer_id.eq.${userId},borrower_id.eq.${userId})`,
+      or: `(payer_id.eq.${resolvedUserId},borrower_id.eq.${resolvedUserId})`,
       select: "id",
       limit: "1",
     },
@@ -22,7 +23,7 @@ export async function DELETE(_request, { params }) {
 
   await supa("/project_members", {
     method: "DELETE",
-    query: { project_id: `eq.${projectId}`, user_id: `eq.${userId}` },
+    query: { project_id: `eq.${projectId}`, user_id: `eq.${resolvedUserId}` },
   });
   return NextResponse.json({ success: true });
 }

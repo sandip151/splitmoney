@@ -1,19 +1,27 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 
 async function api(url, options = {}) {
   const response = await fetch(url, {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Request failed");
+  const text = await response.text();
+  let data = {};
+  try {
+    if (text) data = JSON.parse(text);
+  } catch {
+    throw new Error(`Server error: ${response.status}`);
+  }
+  if (!response.ok) throw new Error(data.error || `Request failed with status ${response.status}`);
   return data;
 }
 
-export default function ProjectPage({ params }) {
-  const projectId = Number(params.id);
+export default function ProjectPage() {
+  const params = useParams();
+  const projectId = Number(params?.id);
   const [allUsers, setAllUsers] = useState([]);
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(true);

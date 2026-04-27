@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { supa } from "@/lib/supabaseRest";
 
 export async function PUT(request, { params }) {
-  const userId = Number(params.id);
+  const { id } = await params;
+  const userId = Number(id);
   const body = await request.json().catch(() => ({}));
   const name = String(body.name || "").trim();
   if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -20,7 +21,8 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(_request, { params }) {
-  const userId = Number(params.id);
+  const { id } = await params;
+  const userId = Number(id);
 
   const membership = await supa("/project_members", {
     query: { user_id: `eq.${userId}`, select: "project_id", limit: "1" },

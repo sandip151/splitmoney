@@ -3,7 +3,8 @@ import { supa, toInFilter } from "@/lib/supabaseRest";
 import { computeBalances, simplifyDebts } from "@/lib/balances";
 
 export async function GET(_request, { params }) {
-  const projectId = Number(params.id);
+  const { id } = await params;
+  const projectId = Number(id);
 
   const projects = await supa("/projects", {
     query: { id: `eq.${projectId}`, select: "id,name" },
@@ -66,7 +67,8 @@ export async function GET(_request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-  const projectId = Number(params.id);
+  const { id } = await params;
+  const projectId = Number(id);
   const body = await request.json().catch(() => ({}));
   const name = String(body.name || "").trim();
   if (!name) return NextResponse.json({ error: "Project name is required" }, { status: 400 });
@@ -84,7 +86,8 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(_request, { params }) {
-  const projectId = Number(params.id);
+  const { id } = await params;
+  const projectId = Number(id);
   await supa("/projects", { method: "DELETE", query: { id: `eq.${projectId}` } });
   return NextResponse.json({ success: true });
 }

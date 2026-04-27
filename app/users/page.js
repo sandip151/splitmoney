@@ -7,8 +7,14 @@ async function api(url, options = {}) {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Request failed");
+  const text = await response.text();
+  let data = {};
+  try {
+    if (text) data = JSON.parse(text);
+  } catch {
+    throw new Error(`Server error: ${response.status}`);
+  }
+  if (!response.ok) throw new Error(data.error || `Request failed with status ${response.status}`);
   return data;
 }
 
