@@ -2,7 +2,7 @@
 
 SplitMoney is a lightweight, zero-dependency web application designed to track shared expenses and settle debts among friends, heavily inspired by Splitwise. It provides a simple, intuitive interface to manage users, group them into projects, and automatically calculate who owes whom based on shared transactions.
 
-Currently, SplitMoney serves as a rapid prototype utilizing a Vanilla Node.js backend with an in-memory database and a Vanilla JavaScript frontend.
+SplitMoney uses a Vanilla Node.js backend and Vanilla JavaScript frontend. It stores data in **Supabase Postgres** via the Supabase **REST API** (no npm dependencies needed).
 
 ## 🚀 Key Features
 
@@ -38,9 +38,9 @@ You don't need to do any math. As you add expenses, SplitMoney runs an algorithm
 
 The application is built entirely from scratch without heavy frameworks or external npm dependencies. It is designed to be a fast, understandable prototype.
 
-### Backend (`server.js`)
+### Backend (`src/main.js`)
 * **No Frameworks:** Uses Node.js built-in `http`, `fs`, and `path` modules to serve HTML/CSS/JS and handle RESTful API routing.
-* **In-Memory Database:** Data is temporarily stored in standard JavaScript objects and arrays (`db.users`, `db.projects`, `db.expenses`). 
+* **Supabase Storage:** Reads/writes to Supabase Postgres tables: `users`, `projects`, `project_members`, `expenses` via `https://<project>.supabase.co/rest/v1`.
 * **REST API Endpoints:** * `GET /api/users`, `POST /api/users`, `PUT /api/users/:id`, `DELETE /api/users/:id`
   * `GET /api/projects`, `POST /api/projects`, `PUT /api/projects/:id`, `DELETE /api/projects/:id`
   * `POST /api/projects/:id/members`, `DELETE /api/projects/:id/members/:userId`
@@ -66,6 +66,19 @@ Because this project has zero external dependencies, getting it running locally 
    ```bash
    git clone git@github.com:sandip151/splitmoney.git
    cd splitmoney
+(Local) Set environment variables (example):
+
+```bash
+export SUPABASE_URL="https://YOUR_PROJECT.supabase.co"
+export SUPABASE_SERVICE_ROLE_KEY="YOUR_SERVICE_ROLE_KEY"
+export PORT=3000
+node src/main.js
+```
+
+(Vercel) Add environment variables:
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY` (Sensitive)
+
 
 
 (Note: we are planning to make this website with 0 cost so no paid any subscription for hosting or database or anything else)
