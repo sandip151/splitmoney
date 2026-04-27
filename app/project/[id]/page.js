@@ -79,6 +79,7 @@ export default function ProjectPage() {
       memberAId: Number(form.memberAId.value),
       memberBId: Number(form.memberBId.value),
       type: form.type.value,
+      expenseDate: expenseDate, // <-- Added this line to include expenseDate
     };
     try {
       await api(`/api/projects/${projectId}/expenses`, { method: "POST", body: JSON.stringify(payload) });
