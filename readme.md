@@ -1,6 +1,6 @@
 # SplitMoney 💸
 
-SplitMoney is a lightweight, zero-dependency web application designed to track shared expenses and settle debts among friends, heavily inspired by Splitwise. It provides a simple, intuitive interface to manage users, group them into projects, and automatically calculate who owes whom based on shared transactions.
+SplitMoney is a Next.js web application designed to track shared expenses and settle debts among friends, heavily inspired by Splitwise. It provides a simple interface to manage users, group them into projects, and calculate who owes whom based on shared transactions.
 
 SplitMoney is a **Next.js (App Router)** web app designed for **Vercel**. It stores data in **Supabase Postgres** via server-side API routes.
 
@@ -55,7 +55,7 @@ You don't need to do any math. As you add expenses, SplitMoney runs an algorithm
 
 ## 💻 Getting Started
 
-Because this is a Next.js app, install dependencies once and then run the dev server.
+This is a Next.js app (App Router). Install dependencies and run the dev server.
 
 ### Prerequisites
 * [Node.js](https://nodejs.org/) installed on your machine.
