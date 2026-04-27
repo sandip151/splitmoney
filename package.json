@@ -2,10 +2,16 @@
   "name": "splitmoney",
   "version": "0.1.0",
   "private": true,
-  "type": "commonjs",
-  "main": "src/main.js",
+  "type": "module",
+  "main": "app/page.js",
   "scripts": {
-    "start": "node src/main.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
-  "dependencies": {}
+  "dependencies": {
+    "next": "^16.2.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
 }

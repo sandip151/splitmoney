@@ -2,7 +2,7 @@
 
 SplitMoney is a lightweight, zero-dependency web application designed to track shared expenses and settle debts among friends, heavily inspired by Splitwise. It provides a simple, intuitive interface to manage users, group them into projects, and automatically calculate who owes whom based on shared transactions.
 
-SplitMoney uses a Vanilla Node.js backend and Vanilla JavaScript frontend. It stores data in **Supabase Postgres** via the Supabase **REST API** (no npm dependencies needed).
+SplitMoney is a **Next.js (App Router)** web app designed for **Vercel**. It stores data in **Supabase Postgres** via server-side API routes.
 
 ## 🚀 Key Features
 
@@ -36,27 +36,26 @@ You don't need to do any math. As you add expenses, SplitMoney runs an algorithm
 
 ## 🛠️ Technical Architecture
 
-The application is built entirely from scratch without heavy frameworks or external npm dependencies. It is designed to be a fast, understandable prototype.
-
-### Backend (`src/main.js`)
-* **No Frameworks:** Uses Node.js built-in `http`, `fs`, and `path` modules to serve HTML/CSS/JS and handle RESTful API routing.
-* **Supabase Storage:** Reads/writes to Supabase Postgres tables: `users`, `projects`, `project_members`, `expenses` via `https://<project>.supabase.co/rest/v1`.
-* **REST API Endpoints:** * `GET /api/users`, `POST /api/users`, `PUT /api/users/:id`, `DELETE /api/users/:id`
-  * `GET /api/projects`, `POST /api/projects`, `PUT /api/projects/:id`, `DELETE /api/projects/:id`
-  * `POST /api/projects/:id/members`, `DELETE /api/projects/:id/members/:userId`
+### Next.js App
+* **UI pages**:
+  * `/users` → `app/users/page.js`
+  * `/projects` → `app/projects/page.js`
+  * `/project/[id]` → `app/project/[id]/page.js`
+* **API routes** (server-side, talk to Supabase):
+  * `GET/POST /api/users`
+  * `PUT/DELETE /api/users/:id`
+  * `GET/POST /api/projects`
+  * `GET/PUT/DELETE /api/projects/:id`
+  * `POST /api/projects/:id/members`
+  * `DELETE /api/projects/:id/members/:userId`
   * `POST /api/projects/:id/expenses`
-* **Debt Algorithm:** Implements a greedy algorithm (`simplifyDebts`) that matches the highest debtors with the highest creditors to minimize the total number of payback transactions.
-
-### Frontend (`public/`)
-* **Vanilla Stack:** Pure HTML5, CSS3, and JavaScript. 
-* **Dynamic Rendering:** Uses the native `fetch` API to communicate with the backend and dynamically updates the DOM without full page reloads.
-* **Responsive Design:** Clean, card-based UI built with CSS Grid and Flexbox for a modern feel.
+* **Debt algorithm**: same greedy simplification used to compute balances and settlement suggestions.
 
 ---
 
 ## 💻 Getting Started
 
-Because this project has zero external dependencies, getting it running locally takes seconds.
+Because this is a Next.js app, install dependencies once and then run the dev server.
 
 ### Prerequisites
 * [Node.js](https://nodejs.org/) installed on your machine.
@@ -66,13 +65,19 @@ Because this project has zero external dependencies, getting it running locally 
    ```bash
    git clone git@github.com:sandip151/splitmoney.git
    cd splitmoney
-(Local) Set environment variables (example):
+(Local) Install:
+
+```bash
+npm install
+```
+
+Set environment variables (example):
 
 ```bash
 export SUPABASE_URL="https://YOUR_PROJECT.supabase.co"
 export SUPABASE_SERVICE_ROLE_KEY="YOUR_SERVICE_ROLE_KEY"
 export PORT=3000
-node src/main.js
+npm run dev
 ```
 
 (Vercel) Add environment variables:
