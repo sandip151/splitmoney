@@ -193,188 +193,120 @@ export default function ProjectPage() {
     return acc;
   }, {});
 
+  const totalProjectCost = (state.expenses || []).reduce((sum, exp) => sum + exp.enteredAmount, 0);
+
   const orderedDates = Object.keys(groupedExpenses).sort((a, b) => b.localeCompare(a));
 
   return (
     <>
-      <h1>Project: {state.project.name}</h1>
-      <p className={summaryClass}>
-        <strong>{summaryText}</strong>
-      </p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "16px" }}>
+        <div>
+          <h1 style={{ marginBottom: "4px" }}>{state.project.name}</h1>
+          <p className={summaryClass} style={{ margin: 0, fontSize: "14px" }}>
+            <strong>{summaryText}</strong>
+          </p>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div className="muted" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Total Trip Cost</div>
+          <div style={{ fontSize: "20px", fontWeight: "bold", color: "#111827" }}>₹{totalProjectCost.toFixed(2)}</div>
+        </div>
+      </div>
 
-      <div className="card">
-        <h3>Project Members</h3>
-        <form onSubmit={addMember}>
-          <select name="userId" defaultValue={availableToAdd[0]?.id ?? ""}>
-            {availableToAdd.length === 0 ? (
-              <option value="">No available users</option>
-            ) : (
-              availableToAdd.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))
-            )}
-          </select>
-          <button type="submit">Add Member</button>
-        </form>
-        {members.length === 0 ? (
-          <div className="muted">No members yet.</div>
+      {/* --- DASHBOARD ZONE --- */}
+      <div className="card" style={{ borderTop: "4px solid #2563eb" }}>
+        <h3 style={{ marginBottom: "12px" }}>How to Settle Up</h3>
+        {state.settlements.length === 0 ? (
+          <div className="good" style={{ padding: "12px", backgroundColor: "#ecfdf5", borderRadius: "6px" }}>✨ All settled up! No debts pending.</div>
         ) : (
-          <ul>
-            {members.map((m) => (
-              <li key={m.id}>
-                <div className="row">
-                  <strong>{m.name}</strong>
-                  <button className="danger" type="button" onClick={() => removeMember(m.id)}>
-                    Remove
-                  </button>
-                </div>
+          <ul style={{ marginBottom: "16px" }}>
+            {state.settlements.map((s, idx) => (
+              <li key={idx} style={{ padding: "8px 0", fontSize: "16px" }}>
+                <strong>{s.fromUserName}</strong> pays <strong>{s.toUserName}</strong>: <span style={{ color: "#dc2626", fontWeight: "bold" }}>₹{s.amount.toFixed(2)}</span>
               </li>
             ))}
           </ul>
         )}
-      </div>
 
-      <div className="card">
-        <h3>Add Transaction</h3>
-        <form onSubmit={addExpense}>
-          <input name="description" placeholder="Description" required />
-          <input name="amount" type="number" step="0.01" min="0.01" placeholder="Amount" required />
-          <input
-            name="expenseDate"
-            type="date"
-            value={expenseDate}
-            onChange={(e) => setExpenseDate(e.target.value)}
-            required
-          />
-          <input type="hidden" name="memberAId" value={memberA?.id ?? ""} />
-          <input type="hidden" name="memberBId" value={memberB?.id ?? ""} />
-          <select name="type" defaultValue="A_PAID_SPLIT" disabled={!canAddExpense}>
-            {canAddExpense ? (
-              expenseOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))
-            ) : (
-              <option value="">Exactly 2 members required</option>
-            )}
-          </select>
-          <button type="submit" disabled={!canAddExpense}>
-            Add Expense
-          </button>
-        </form>
-        <p className="muted">Add description, amount, date, and choose transaction type.</p>
-        {!canAddExpense && (
-          <p className="bad">
-            This flow is optimized for 2-member projects. Please keep exactly 2 members to add transactions.
-          </p>
-        )}
-      </div>
-
-      <div className="card">
-        <h3>Mass Upload (CSV)</h3>
-        <form onSubmit={handleCSVUpload} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <input type="file" name="csvFile" accept=".csv" required disabled={!canAddExpense} />
-          <button type="submit" className="secondary" disabled={!canAddExpense}>Upload CSV</button>
-        </form>
-        <p className="muted" style={{ fontSize: "12px", marginTop: "8px" }}>
-          Format: <code>Date,Description,Amount,Type</code><br/>
-          (Types: A_PAID_SPLIT, B_PAID_SPLIT, A_OWE_FULL, B_OWE_FULL) — 'A' is the first member listed above, 'B' is the second.
-        </p>
-      </div>
-
-      <div className="card">
-        <h3>Balances</h3>
+        <h4 style={{ fontSize: "14px", marginTop: "16px", marginBottom: "8px", color: "#4b5563" }}>Individual Balances</h4>
         {state.balances.length === 0 ? (
-          <div className="muted">No balances yet.</div>
+          <div className="muted" style={{ fontSize: "14px" }}>No balances yet.</div>
         ) : (
-          <ul>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
             {state.balances.map((b) => {
               let text = "settled";
-              let className = "muted";
+              let color = "#6b7280";
+              let bgColor = "#f3f4f6";
+              
               if (b.balance > 0.009) {
-                text = `should receive Rs ${b.balance.toFixed(2)}`;
-                className = "good";
+                text = `gets back ₹${b.balance.toFixed(2)}`;
+                color = "#059669";
+                bgColor = "#ecfdf5";
               } else if (b.balance < -0.009) {
-                text = `owes Rs ${Math.abs(b.balance).toFixed(2)}`;
-                className = "bad";
+                text = `owes ₹${Math.abs(b.balance).toFixed(2)}`;
+                color = "#dc2626";
+                bgColor = "#fef2f2";
               }
+              
               return (
-                <li key={b.userId}>
-                  <strong>{b.userName}</strong> <span className={className}>{text}</span>
-                </li>
+                <div key={b.userId} style={{ padding: "8px 12px", backgroundColor: bgColor, borderRadius: "6px", fontSize: "14px", border: `1px solid ${color}40` }}>
+                  <strong>{b.userName}</strong> <span style={{ color: color }}>{text}</span>
+                </div>
               );
             })}
-          </ul>
+          </div>
         )}
       </div>
 
+      {/* --- ACTION ZONE --- */}
       <div className="card">
-        <h3>Settlement Suggestions</h3>
-        {state.settlements.length === 0 ? (
-          <div className="good">All settled up.</div>
-        ) : (
-          <ul>
-            {state.settlements.map((s, idx) => (
-              <li key={idx}>
-                {s.fromUserName} pays {s.toUserName}: Rs {s.amount.toFixed(2)}
-              </li>
-            ))}
-          </ul>
-        )}
+        <h3>Add Quick Transaction</h3>
+        <form onSubmit={addExpense}>
+          <input name="description" placeholder="What was this for?" required style={{ flex: "1 1 200px" }} />
+          <input name="amount" type="number" step="0.01" min="0.01" placeholder="Amount (₹)" required style={{ width: "120px" }} />
+          <input name="expenseDate" type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} required />
+          <input type="hidden" name="memberAId" value={memberA?.id ?? ""} />
+          <input type="hidden" name="memberBId" value={memberB?.id ?? ""} />
+          <select name="type" defaultValue="A_PAID_SPLIT" disabled={!canAddExpense} style={{ flex: "1 1 250px" }}>
+            {canAddExpense ? expenseOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>) : <option value="">Exactly 2 members required</option>}
+          </select>
+          <button type="submit" disabled={!canAddExpense}>Add</button>
+        </form>
+        {!canAddExpense && <p className="bad" style={{ fontSize: "13px", marginTop: "8px" }}>Requires exactly 2 members to add transactions.</p>}
       </div>
 
+      {/* --- LEDGER ZONE --- */}
       <div className="card">
-        <h3>Transactions</h3>
+        <h3>Transaction History</h3>
         {state.expenses.length === 0 ? (
           <div className="muted">No transactions yet.</div>
         ) : (
           orderedDates.map((date) => (
-            <div key={date} style={{ marginBottom: "12px" }}>
-              <div
-                className="muted"
-                style={{
-                  background: "#f3f4f6",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "6px",
-                  padding: "6px 10px",
-                  marginBottom: "6px",
-                }}
-              >
-                <strong>{new Date(date).toLocaleDateString()}</strong>
+            <div key={date} style={{ marginBottom: "16px" }}>
+              <div className="muted" style={{ background: "#f9fafb", borderBottom: "2px solid #e5e7eb", padding: "6px 4px", marginBottom: "8px", fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                <strong>{new Date(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</strong>
               </div>
               <ul>
                 {groupedExpenses[date].map((exp) => {
                   const isFullyOwed = exp.type === "A_OWE_FULL" || exp.type === "B_OWE_FULL";
-                  const typeDescription = isFullyOwed 
-                    ? `🎯 Personal Purchase` 
-                    : `🤝 Split equally`;
+                  const typeDescription = isFullyOwed ? `🎯 Personal` : `🤝 Split`;
 
                   return (
-                    <li key={exp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "12px 0", borderBottom: "1px solid #e5e7eb" }}>
-                      <div style={{ flex: 1 }}>
+                    <li key={exp.id} style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "space-between", alignItems: "center", padding: "12px 4px", borderBottom: "1px solid #f3f4f6" }}>
+                      <div style={{ flex: "1 1 200px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                          <strong style={{ fontSize: "16px" }}>{exp.description}</strong>
-                          <span style={{ fontSize: "11px", backgroundColor: "#f3f4f6", padding: "2px 8px", borderRadius: "12px", color: "#4b5563", fontWeight: "500" }}>
-                            {typeDescription}
-                          </span>
+                          <strong style={{ fontSize: "15px", color: "#111827" }}>{exp.description}</strong>
+                          <span style={{ fontSize: "11px", backgroundColor: "#f3f4f6", padding: "2px 6px", borderRadius: "4px", color: "#6b7280" }}>{typeDescription}</span>
                         </div>
-                        
-                        <div style={{ fontSize: "14px", color: "#111827" }}>
+                        <div style={{ fontSize: "13px", color: "#4b5563" }}>
                           {isFullyOwed ? (
                             <span><strong>{exp.borrowerName}</strong> owes <strong>₹{Number(exp.amount).toFixed(2)}</strong></span>
                           ) : (
-                            <span>Total: ₹{Number(exp.enteredAmount).toFixed(2)} <span className="muted" style={{margin: "0 6px"}}>|</span> <strong>{exp.borrowerName}</strong> owes <strong>₹{Number(exp.amount).toFixed(2)}</strong></span>
+                            <span>Total: ₹{Number(exp.enteredAmount).toFixed(2)} <span className="muted">|</span> <strong>{exp.borrowerName}</strong> owes <strong>₹{Number(exp.amount).toFixed(2)}</strong></span>
                           )}
                         </div>
-                        
-                        <div style={{ fontSize: "12px", color: "#059669", marginTop: "4px", fontWeight: "500" }}>
-                          Paid by {exp.payerName}
-                        </div>
+                        <div style={{ fontSize: "12px", color: "#059669", marginTop: "2px" }}>Paid by {exp.payerName}</div>
                       </div>
-                      <button className="danger" onClick={() => deleteExpense(exp.id)} style={{ marginLeft: "16px", padding: "6px 12px" }}>Delete</button>
+                      <button onClick={() => deleteExpense(exp.id)} style={{ background: "none", border: "none", color: "#dc2626", fontSize: "13px", cursor: "pointer", padding: "4px 8px" }}>Delete</button>
                     </li>
                   );
                 })}
@@ -382,6 +314,36 @@ export default function ProjectPage() {
             </div>
           ))
         )}
+      </div>
+
+      {/* --- ADMIN ZONE --- */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "14px", marginTop: "24px" }}>
+        <div className="card" style={{ flex: "1 1 300px", margin: 0, backgroundColor: "#f9fafb" }}>
+          <h4 style={{ fontSize: "14px", marginTop: 0 }}>Project Members</h4>
+          <form onSubmit={addMember} style={{ marginBottom: "12px" }}>
+            <select name="userId" defaultValue={availableToAdd[0]?.id ?? ""} style={{ flex: 1 }}>
+              {availableToAdd.length === 0 ? <option value="">No available users</option> : availableToAdd.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+            </select>
+            <button type="submit" className="secondary">Add</button>
+          </form>
+          <ul style={{ fontSize: "13px" }}>
+            {members.map((m) => (
+              <li key={m.id} style={{ padding: "4px 0", display: "flex", justifyContent: "space-between" }}>
+                <strong>{m.name}</strong>
+                <span onClick={() => removeMember(m.id)} style={{ color: "#dc2626", cursor: "pointer", textDecoration: "underline" }}>Remove</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="card" style={{ flex: "1 1 300px", margin: 0, backgroundColor: "#f9fafb" }}>
+          <h4 style={{ fontSize: "14px", marginTop: 0 }}>Mass Upload (CSV)</h4>
+          <form onSubmit={handleCSVUpload} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <input type="file" name="csvFile" accept=".csv" required disabled={!canAddExpense} style={{ background: "#fff" }} />
+            <button type="submit" className="secondary" disabled={!canAddExpense}>Upload CSV Data</button>
+          </form>
+          <p className="muted" style={{ fontSize: "11px", marginTop: "8px" }}>Format: <code>Date,Description,Amount,Type</code><br/>(A is 1st member, B is 2nd)</p>
+        </div>
       </div>
     </>
   );
