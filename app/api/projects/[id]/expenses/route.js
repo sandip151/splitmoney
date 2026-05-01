@@ -6,59 +6,52 @@ export async function POST(request, { params }) {
   const projectId = Number(id);
   const body = await request.json().catch(() => ({}));
 
-  const enteredAmount = Number(body.amount);
-  const description = String(body.description || "").trim();
-  const type = String(body.type || "");
-  const expenseDate = String(body.expenseDate || "").trim();
-  const memberAId = Number(body.memberAId);
-  const memberBId = Number(body.memberBId);
+  // Determine if we are receiving one expense (form) or an array (CSV)
+  const items = Array.isArray(body) ? body : [body];
+  const rowsToInsert = [];
 
-  if (!enteredAmount || enteredAmount <= 0) {
-    return NextResponse.json({ error: "Amount must be greater than 0" }, { status: 400 });
-  }
-  if (!expenseDate) return NextResponse.json({ error: "Expense date is required" }, { status: 400 });
-  if (!description) return NextResponse.json({ error: "Description is required" }, { status: 400 });
-  if (!memberAId || !memberBId) return NextResponse.json({ error: "Please choose two users" }, { status: 400 });
-  if (memberAId === memberBId) return NextResponse.json({ error: "Please choose two different users" }, { status: 400 });
+  for (const item of items) {
+    const enteredAmount = Number(item.amount);
+    const description = String(item.description || "").trim();
+    const type = String(item.type || "");
+    const expenseDate = String(item.expenseDate || "").trim();
+    const memberAId = Number(item.memberAId);
+    const memberBId = Number(item.memberBId);
 
-  const membershipRows = await supa("/project_members", {
-    query: {
-      project_id: `eq.${projectId}`,
-      user_id: `in.${toInFilter([memberAId, memberBId])}`,
-      select: "user_id",
-    },
-  });
-  if (!membershipRows || membershipRows.length !== 2) {
-    return NextResponse.json({ error: "Both users must be project members" }, { status: 400 });
-  }
+    if (!enteredAmount || enteredAmount <= 0) return NextResponse.json({ error: "Amount must be greater than 0" }, { status: 400 });
+    if (!expenseDate) return NextResponse.json({ error: "Expense date is required" }, { status: 400 });
+    if (!description) return NextResponse.json({ error: "Description is required" }, { status: 400 });
+    if (!memberAId || !memberBId) return NextResponse.json({ error: "Please choose two users" }, { status: 400 });
+    if (memberAId === memberBId) return NextResponse.json({ error: "Please choose two different users" }, { status: 400 });
 
-  let payerId;
-  let borrowerId;
-  let amount;
+    const membershipRows = await supa("/project_members", {
+      query: {
+        project_id: `eq.${projectId}`,
+        user_id: `in.${toInFilter([memberAId, memberBId])}`,
+        select: "user_id",
+      },
+    });
+    if (!membershipRows || membershipRows.length !== 2) {
+      return NextResponse.json({ error: "Both users must be project members" }, { status: 400 });
+    }
 
-  if (type === "A_PAID_SPLIT") {
-    payerId = memberAId;
-    borrowerId = memberBId;
-    amount = enteredAmount / 2;
-  } else if (type === "A_OWE_FULL") {
-    payerId = memberBId;
-    borrowerId = memberAId;
-    amount = enteredAmount;
-  } else if (type === "B_PAID_SPLIT") {
-    payerId = memberBId;
-    borrowerId = memberAId;
-    amount = enteredAmount / 2;
-  } else if (type === "B_OWE_FULL") {
-    payerId = memberAId;
-    borrowerId = memberBId;
-    amount = enteredAmount;
-  } else {
-    return NextResponse.json({ error: "Invalid expense type" }, { status: 400 });
-  }
+    let payerId;
+    let borrowerId;
+    let amount;
 
-  const inserted = await supa("/expenses", {
-    method: "POST",
-    body: {
+    if (type === "A_PAID_SPLIT") {
+      payerId = memberAId; borrowerId = memberBId; amount = enteredAmount / 2;
+    } else if (type === "A_OWE_FULL") {
+      payerId = memberBId; borrowerId = memberAId; amount = enteredAmount;
+    } else if (type === "B_PAID_SPLIT") {
+      payerId = memberBId; borrowerId = memberAId; amount = enteredAmount / 2;
+    } else if (type === "B_OWE_FULL") {
+      payerId = memberAId; borrowerId = memberBId; amount = enteredAmount;
+    } else {
+      return NextResponse.json({ error: "Invalid expense type" }, { status: 400 });
+    }
+
+    rowsToInsert.push({
       project_id: projectId,
       description,
       amount: Number(amount.toFixed(2)),
@@ -67,25 +60,16 @@ export async function POST(request, { params }) {
       borrower_id: borrowerId,
       type,
       expense_date: expenseDate,
-    },
+    });
+  }
+
+  // Insert all rows at once
+  await supa("/expenses", {
+    method: "POST",
+    body: rowsToInsert,
     preferReturn: true,
   });
 
-  const e = inserted[0];
-  return NextResponse.json(
-    {
-      id: e.id,
-      projectId: e.project_id,
-      description: e.description,
-      amount: Number(Number(e.amount).toFixed(2)),
-      enteredAmount: Number(Number(e.entered_amount).toFixed(2)),
-      payerId: e.payer_id,
-      borrowerId: e.borrower_id,
-      type: e.type,
-      expenseDate: e.expense_date || expenseDate,
-      createdAt: e.created_at,
-    },
-    { status: 201 }
-  );
+  return NextResponse.json({ success: true }, { status: 201 });
 }
 

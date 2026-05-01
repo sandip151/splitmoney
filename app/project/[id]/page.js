@@ -90,6 +90,58 @@ export default function ProjectPage() {
     }
   }
 
+  async function deleteExpense(expenseId) {
+    if (!confirm("Delete this transaction? This will automatically recalculate all balances.")) return;
+    try {
+      await api(`/api/projects/${projectId}/expenses/${expenseId}`, { method: "DELETE" });
+      await load();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function handleCSVUpload(e) {
+    e.preventDefault();
+    const fileInput = e.target.csvFile;
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target.result;
+      const lines = text.split("\n").map(l => l.trim()).filter(l => l);
+      
+      // Remove the header line
+      const dataLines = lines.slice(1);
+      if (dataLines.length === 0) {
+        alert("No valid data found in CSV");
+        return;
+      }
+
+      const payload = dataLines.map(line => {
+        const [expenseDate, description, amountStr, type] = line.split(",");
+        return {
+          description: description.trim(),
+          amount: Number(amountStr),
+          memberAId: memberA?.id,
+          memberBId: memberB?.id,
+          type: type.trim(),
+          expenseDate: expenseDate.trim()
+        };
+      });
+
+      try {
+        await api(`/api/projects/${projectId}/expenses`, { method: "POST", body: JSON.stringify(payload) });
+        fileInput.value = ""; // reset input
+        alert(`${payload.length} transactions uploaded successfully!`);
+        await load();
+      } catch (err) {
+        alert("Failed to upload CSV: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
   if (loading && !state) {
     return <div className="muted">Loading…</div>;
   }
@@ -222,6 +274,18 @@ export default function ProjectPage() {
       </div>
 
       <div className="card">
+        <h3>Mass Upload (CSV)</h3>
+        <form onSubmit={handleCSVUpload} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <input type="file" name="csvFile" accept=".csv" required disabled={!canAddExpense} />
+          <button type="submit" className="secondary" disabled={!canAddExpense}>Upload CSV</button>
+        </form>
+        <p className="muted" style={{ fontSize: "12px", marginTop: "8px" }}>
+          Format: <code>Date,Description,Amount,Type</code><br/>
+          (Types: A_PAID_SPLIT, B_PAID_SPLIT, A_OWE_FULL, B_OWE_FULL) — 'A' is the first member listed above, 'B' is the second.
+        </p>
+      </div>
+
+      <div className="card">
         <h3>Balances</h3>
         {state.balances.length === 0 ? (
           <div className="muted">No balances yet.</div>
@@ -283,17 +347,13 @@ export default function ProjectPage() {
               </div>
               <ul>
                 {groupedExpenses[date].map((exp) => (
-                  <li key={exp.id}>
+                  <li key={exp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
-                      <strong>{exp.description}</strong>
+                      <div><strong>{exp.description}</strong></div>
+                      <div className="muted">Total: Rs {Number(exp.enteredAmount).toFixed(2)} | Share transfer: Rs {Number(exp.amount).toFixed(2)}</div>
+                      <div>{exp.borrowerName} owes {exp.payerName}</div>
                     </div>
-                    <div className="muted">
-                      Total: Rs {Number(exp.enteredAmount).toFixed(2)} | Share transfer: Rs{" "}
-                      {Number(exp.amount).toFixed(2)}
-                    </div>
-                    <div>
-                      {exp.borrowerName} owes {exp.payerName}
-                    </div>
+                    <button className="danger" onClick={() => deleteExpense(exp.id)}>Delete</button>
                   </li>
                 ))}
               </ul>
