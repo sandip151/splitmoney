@@ -26,6 +26,7 @@ export default function ProjectPage() {
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().slice(0, 10));
+  const [splitType, setSplitType] = useState("equal");
 
   const availableToAdd = useMemo(() => {
     if (!state) return [];
@@ -73,19 +74,76 @@ export default function ProjectPage() {
   async function addExpense(e) {
     e.preventDefault();
     const form = e.target;
-    const payload = {
-      description: form.description.value,
-      amount: Number(form.amount.value),
-      memberAId: Number(form.memberAId.value),
-      memberBId: Number(form.memberBId.value),
-      type: form.type.value,
-      expenseDate: expenseDate, // <-- Added this line to include expenseDate
-    };
+    const description = form.description.value;
+    const totalAmount = Number(form.amount.value);
+    const payerId = Number(form.payerId.value);
+    const splitType = form.splitType.value;
+    const expenseDateVal = expenseDate;
+
+    if (!description || !totalAmount || !payerId) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    // Build array of debts based on split type
+    const debts = [];
+    
+    if (splitType === "equal") {
+      // Split equally among all members except payer
+      const splitAmount = totalAmount / members.length;
+      for (const member of members) {
+        if (member.id !== payerId) {
+          debts.push({
+            description,
+            enteredAmount: totalAmount,
+            payerId,
+            borrowerId: member.id,
+            amount: splitAmount,
+            expenseDate: expenseDateVal,
+          });
+        }
+      }
+    } else {
+      // Custom split - read custom amounts for each member
+      let othersDebtSum = 0;
+      // Get the payer's individual share from the form to complete the math
+      const payerShare = Number(form[`custom_${payerId}`]?.value || 0);
+      
+      for (const member of members) {
+        if (member.id !== payerId) {
+          const customAmount = Number(form[`custom_${member.id}`]?.value || 0);
+          othersDebtSum += customAmount;
+          if (customAmount > 0) {
+            debts.push({
+              description,
+              enteredAmount: totalAmount,
+              payerId,
+              borrowerId: member.id,
+              amount: customAmount,
+              expenseDate: expenseDateVal,
+            });
+          }
+        }
+      }
+      
+      // Total check: Sum of everyone's share (including payer) must = Total Receipt
+      const totalAllocated = othersDebtSum + payerShare;
+      if (Math.abs(totalAllocated - totalAmount) > 0.01) {
+         alert(`Error: Total allocated (₹${totalAllocated.toFixed(2)}) doesn't match receipt (₹${totalAmount.toFixed(2)}).`);
+         return;
+      }
+    }
+
+    if (debts.length === 0) {
+      alert("Please specify at least one debt");
+      return;
+    }
+
     try {
-      await api(`/api/projects/${projectId}/expenses`, { method: "POST", body: JSON.stringify(payload) });
+      await api(`/api/projects/${projectId}/expenses`, { method: "POST", body: JSON.stringify(debts) });
       form.reset();
-      await load();
-    } catch (err) {
+        await load();
+      } catch (err) {
       alert(err.message);
     }
   }
@@ -97,7 +155,7 @@ export default function ProjectPage() {
       await load();
     } catch (err) {
       alert(err.message);
-    }
+  }
   }
 
   async function handleCSVUpload(e) {
@@ -119,13 +177,13 @@ export default function ProjectPage() {
       }
 
       const payload = dataLines.map(line => {
-        const [expenseDate, description, amountStr, type] = line.split(",");
+        const [expenseDate, description, totalAmountStr, payerIdStr, borrowerIdStr, amountStr] = line.split(",");
         return {
           description: description.trim(),
+          enteredAmount: Number(totalAmountStr),
+          payerId: Number(payerIdStr),
+          borrowerId: Number(borrowerIdStr),
           amount: Number(amountStr),
-          memberAId: memberA?.id,
-          memberBId: memberB?.id,
-          type: type.trim(),
           expenseDate: expenseDate.trim()
         };
       });
@@ -151,29 +209,6 @@ export default function ProjectPage() {
   }
 
   const members = state.members || [];
-  const canAddExpense = members.length === 2;
-  const [memberA, memberB] = members;
-
-  const expenseOptions = canAddExpense
-    ? [
-        {
-          value: "A_PAID_SPLIT",
-          label: `🤝 ${memberA.name} paid, split 50/50`,
-        },
-        {
-          value: "B_PAID_SPLIT",
-          label: `🤝 ${memberB.name} paid, split 50/50`,
-        },
-        {
-          value: "B_OWE_FULL",
-          label: `🎯 ${memberA.name} paid fully for ${memberB.name}`,
-        },
-        {
-          value: "A_OWE_FULL",
-          label: `🎯 ${memberB.name} paid fully for ${memberA.name}`,
-        },
-      ]
-    : [];
 
   const topSettlement = state.settlements?.[0];
   const summaryText =
@@ -259,19 +294,49 @@ export default function ProjectPage() {
 
       {/* --- ACTION ZONE --- */}
       <div className="card">
-        <h3>Add Quick Transaction</h3>
-        <form onSubmit={addExpense}>
-          <input name="description" placeholder="What was this for?" required style={{ flex: "1 1 200px" }} />
-          <input name="amount" type="number" step="0.01" min="0.01" placeholder="Amount (₹)" required style={{ width: "120px" }} />
-          <input name="expenseDate" type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} required />
-          <input type="hidden" name="memberAId" value={memberA?.id ?? ""} />
-          <input type="hidden" name="memberBId" value={memberB?.id ?? ""} />
-          <select name="type" defaultValue="A_PAID_SPLIT" disabled={!canAddExpense} style={{ flex: "1 1 250px" }}>
-            {canAddExpense ? expenseOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>) : <option value="">Exactly 2 members required</option>}
-          </select>
-          <button type="submit" disabled={!canAddExpense}>Add</button>
-        </form>
-        {!canAddExpense && <p className="bad" style={{ fontSize: "13px", marginTop: "8px" }}>Requires exactly 2 members to add transactions.</p>}
+        <h3>Add Transaction</h3>
+        {members.length < 2 ? (
+          <p className="bad">Add at least 2 members to create transactions.</p>
+        ) : (
+          <form onSubmit={addExpense}>
+            <div style={{ marginBottom: "12px" }}>
+              <label style={{ display: "block", fontSize: "13px", marginBottom: "4px" }}>Who paid?</label>
+              <select name="payerId" required style={{ width: "100%", padding: "8px" }}>
+                <option value="">Select payer</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+              <input name="description" placeholder="Description (e.g., Dinner)" required style={{ flex: "1 1 150px" }} />
+              <input name="amount" type="number" step="0.01" min="0.01" placeholder="Total amount (₹)" required style={{ width: "140px" }} />
+              <input name="expenseDate" type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} required style={{ width: "130px" }} />
+            </div>
+            <div style={{ marginBottom: "12px" }}>
+              <label style={{ display: "block", fontSize: "13px", marginBottom: "6px" }}>Split type:</label>
+              <select name="splitType" value={splitType} onChange={(e) => setSplitType(e.target.value)} style={{ width: "100%", padding: "8px" }}>
+                <option value="equal">Split equally (among all members)</option>
+                <option value="custom">Custom amounts</option>
+              </select>
+            </div>
+            {splitType === "custom" && (
+              <div style={{ marginBottom: "12px", padding: "10px", backgroundColor: "#f9fafb", borderRadius: "6px" }}>
+                <p style={{ margin: "0 0 12px 0", fontSize: "13px", color: "#4b5563" }}>Enter exactly how much each person owes the Payer (must sum to the Total Amount):</p>
+                {members.map((m) => (
+                  <div key={m.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", marginBottom: "8px", borderBottom: "1px dashed #e5e7eb", paddingBottom: "8px" }}>
+                    <span style={{ flex: "1 1 120px", fontSize: "14px", fontWeight: "500" }}>{m.name}</span>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <span style={{ marginRight: "4px", color: "#6b7280" }}>₹</span>
+                      <input name={`custom_${m.id}`} type="number" step="0.01" min="0" placeholder="0.00" style={{ width: "90px", padding: "6px" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button type="submit">Add Transaction</button>
+          </form>
+        )}
       </div>
 
       {/* --- LEDGER ZONE --- */}
@@ -287,24 +352,15 @@ export default function ProjectPage() {
               </div>
               <ul>
                 {groupedExpenses[date].map((exp) => {
-                  const isFullyOwed = exp.type === "A_OWE_FULL" || exp.type === "B_OWE_FULL";
-                  const typeDescription = isFullyOwed ? `🎯 Personal` : `🤝 Split`;
-
                   return (
                     <li key={exp.id} style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "space-between", alignItems: "center", padding: "12px 4px", borderBottom: "1px solid #f3f4f6" }}>
                       <div style={{ flex: "1 1 200px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
                           <strong style={{ fontSize: "15px", color: "#111827" }}>{exp.description}</strong>
-                          <span style={{ fontSize: "11px", backgroundColor: "#f3f4f6", padding: "2px 6px", borderRadius: "4px", color: "#6b7280" }}>{typeDescription}</span>
                         </div>
                         <div style={{ fontSize: "13px", color: "#4b5563" }}>
-                          {isFullyOwed ? (
-                            <span><strong>{exp.borrowerName}</strong> owes <strong>₹{Number(exp.amount).toFixed(2)}</strong></span>
-                          ) : (
-                            <span>Total: ₹{Number(exp.enteredAmount).toFixed(2)} <span className="muted">|</span> <strong>{exp.borrowerName}</strong> owes <strong>₹{Number(exp.amount).toFixed(2)}</strong></span>
-                          )}
+                          <span><strong>{exp.borrowerName}</strong> owes <strong>₹{Number(exp.amount).toFixed(2)}</strong> to <strong>{exp.payerName}</strong></span>
                         </div>
-                        <div style={{ fontSize: "12px", color: "#059669", marginTop: "2px" }}>Paid by {exp.payerName}</div>
                       </div>
                       <button onClick={() => deleteExpense(exp.id)} style={{ background: "none", border: "none", color: "#dc2626", fontSize: "13px", cursor: "pointer", padding: "4px 8px" }}>Delete</button>
                     </li>
@@ -339,23 +395,22 @@ export default function ProjectPage() {
         <div className="card" style={{ flex: "1 1 300px", margin: 0, backgroundColor: "#f9fafb" }}>
           <h4 style={{ fontSize: "14px", marginTop: 0 }}>Mass Upload (CSV)</h4>
           <form onSubmit={handleCSVUpload} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <input type="file" name="csvFile" accept=".csv" required disabled={!canAddExpense} style={{ background: "#fff" }} />
-            <button type="submit" className="secondary" disabled={!canAddExpense}>Upload CSV Data</button>
+            <input type="file" name="csvFile" accept=".csv" required disabled={members.length < 2} style={{ background: "#fff" }} />
+            <button type="submit" className="secondary" disabled={members.length < 2}>Upload CSV Data</button>
           </form>
           
           <details style={{ marginTop: "12px", fontSize: "12px", color: "#4b5563" }}>
             <summary style={{ cursor: "pointer", fontWeight: "bold", color: "#2563eb", outline: "none" }}>ℹ️ How to format your CSV</summary>
             <div style={{ marginTop: "8px", padding: "10px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "6px" }}>
-              <p style={{ margin: "0 0 6px 0" }}>1. Create a file with exactly these 4 headers:</p>
-              <code style={{ display: "block", background: "#f3f4f6", padding: "6px", marginBottom: "10px", borderRadius: "4px" }}>Date,Description,Amount,Type</code>
+              <p style={{ margin: "0 0 6px 0" }}>1. Create a file with exactly these 6 headers:</p>
+              <code style={{ display: "block", background: "#f3f4f6", padding: "6px", marginBottom: "10px", borderRadius: "4px" }}>Date,Description,TotalAmount,PayerId,BorrowerId,DebtAmount</code>
               <p style={{ margin: "0 0 6px 0" }}>2. <strong>Date</strong> must be formatted as <code>YYYY-MM-DD</code> (e.g., 2026-04-15).</p>
-              <p style={{ margin: "0 0 4px 0" }}>3. <strong>Type</strong> must be exactly one of these codes:</p>
-              <ul style={{ margin: 0, paddingLeft: "16px", listStyleType: "circle", lineHeight: "1.6" }}>
-                <li><code>A_PAID_SPLIT</code> (1st member paid, split 50/50)</li>
-                <li><code>B_PAID_SPLIT</code> (2nd member paid, split 50/50)</li>
-                <li><code>A_OWE_FULL</code> (2nd member paid fully for 1st)</li>
-                <li><code>B_OWE_FULL</code> (1st member paid fully for 2nd)</li>
-              </ul>
+              <p style={{ margin: "0 0 6px 0" }}>3. <strong>PayerId</strong> and <strong>BorrowerId</strong> must be valid user IDs from this project:</p>
+              <div style={{ background: "#f3f4f6", padding: "6px", marginBottom: "10px", borderRadius: "4px", fontSize: "11px" }}>
+                {members.map((m) => (
+                  <div key={m.id}><strong>{m.id}</strong> = {m.name}</div>
+                ))}
+              </div>
               <p style={{ margin: "10px 0 0 0", color: "#dc2626", fontWeight: "bold" }}>* Do NOT use commas inside your descriptions.</p>
             </div>
           </details>

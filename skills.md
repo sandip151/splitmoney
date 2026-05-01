@@ -1,4 +1,3 @@
-```markdown
 # SplitMoney: Project Skills & Knowledge Base
 
 This file (`skills.md`) serves as the core technical and functional context for the **SplitMoney** project. Any AI assistant or developer reading this file should instantly understand the project's purpose, architecture, database schema, routing structure, and specific business logic.
@@ -20,15 +19,13 @@ This file (`skills.md`) serves as the core technical and functional context for 
 * **Package Manager:** `yarn` (NOT npm).
 * **Styling:** Global CSS (`globals.css`) using flexbox and grid for responsive design. No heavy UI libraries like Tailwind or MUI.
 * **Database:** Supabase (PostgreSQL).
-* **API Communication:** Serverless API Routes (`app/api/...`) talking directly to Supabase via the Supabase REST API (fetch calls, NO `@supabase/supabase-js` client library).
+* **API Communication:** Serverless API Routes (`app/api/...`) talking directly to Supabase via the Supabase REST API.
 * **Deployment:** Vercel (Framework Preset MUST be set to "Next.js").
 
 ---
 
 ## 3. Database Schema (Supabase Postgres)
-
 The application relies on four primary tables. All relationships use `ON DELETE CASCADE`.
-
 ```sql
 -- 1. Create Users Table (Global User Pool)
 CREATE TABLE users (
@@ -60,7 +57,7 @@ CREATE TABLE expenses (
   entered_amount numeric NOT NULL,  -- The total cost of the item
   payer_id bigint REFERENCES users(id),
   borrower_id bigint REFERENCES users(id),
-  type text NOT NULL,               -- e.g., 'A_PAID_SPLIT', 'A_OWE_FULL'
+  type text NOT NULL,               -- 'MANUAL' or 'SPLIT'
   expense_date date NOT NULL,       -- Custom date selected by user
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -71,64 +68,52 @@ CREATE INDEX idx_expenses_project_date ON expenses(project_id, expense_date DESC
 ---
 
 ## 4. Routing & Architecture
-
-The app uses the Next.js App Router structure.
+The app uses the Next.js App Router structure. Dynamic route parameters (like `[id]`) are **Promises** in Next 15.
 
 ### Frontend Pages (`app/`)
 * **`/` (`app/page.js`):** Landing page/Home.
-* **`/users` (`app/users/page.js`):** Global user management (Create/Edit/Delete global users).
+* **`/users` (`app/users/page.js`):** Global user management.
 * **`/projects` (`app/projects/page.js`):** Project creation and listing.
-* **`/project/[id]` (`app/project/[id]/page.js`):** The core dashboard for a specific project. Handles member assignment, individual expense entry, bulk CSV upload, and displays the transaction ledger and calculated balances.
+* **`/project/[id]` (`app/project/[id]/page.js`):** The core dashboard. Handles multi-user assignment, dynamic split form entry, bulk CSV upload, and displays the ledger/balances.
 
 ### Backend API Routes (`app/api/`)
-* **`api/users` (GET/POST):** Fetch all users or create a new one.
-* **`api/users/[id]` (PUT/DELETE):** Update or delete a global user (deletion blocked if assigned to a project).
-* **`api/projects` (GET/POST):** Fetch projects or create a new one.
-* **`api/projects/[id]` (GET/PUT/DELETE):** Fetch project details (including members, expenses, and calculated balances), update name, or delete.
-* **`api/projects/[id]/members` (POST):** Add a user to a project.
-* **`api/projects/[id]/members/[userId]` (DELETE):** Remove user from project (blocked if they have active transactions).
-* **`api/projects/[id]/expenses` (POST):** Add new transactions. **CRITICAL:** This route is "Array-Aware". It accepts either a single JSON object (from the UI form) or an array of JSON objects (from CSV upload) and inserts them in bulk.
-* **`api/projects/[id]/expenses/[expenseId]` (DELETE):** Delete a specific transaction.
+* **`api/projects/[id]/expenses` (POST):** Add new transactions. **CRITICAL:** This route is "Array-Aware". It accepts an array of JSON objects (from the UI form or CSV upload) and inserts them in bulk. It optimizes DB queries by checking all `membershipRows` simultaneously outside the loop.
 
 ---
 
 ## 5. Core Business Logic & Rules
 
-### A. The "Two-Member" Expense Rule
-The expense tracking is strictly optimized for **exactly 2 members per project**. 
-* The `addExpense` UI form is **disabled** if there are fewer or more than 2 members.
-* The API enforces the 4 specific mathematical split scenarios using string codes:
-  1. `A_PAID_SPLIT`: Member A paid the full amount. The cost is split 50/50. (Borrower B owes A half).
-  2. `B_PAID_SPLIT`: Member B paid the full amount. The cost is split 50/50. (Borrower A owes B half).
-  3. `A_OWE_FULL`: Member B paid the full amount *specifically* for Member A. (Borrower A owes B the full amount).
-  4. `B_OWE_FULL`: Member A paid the full amount *specifically* for Member B. (Borrower B owes A the full amount).
-* *Note: In the UI, "A" refers to the first person listed in the Project Members array, and "B" is the second.*
+### A. The Multi-Member Expense Engine
+The application supports infinite members per project. The UI handles dynamic expense allocation through two primary modes:
+1. **Split Equally:** The frontend takes the `Total Amount` and divides it equally among all project members. It generates a payload where every non-paying member owes their share to the designated `payerId`.
+2. **Custom Amounts:** The frontend reads exact debt amounts input manually for each member. It strictly validates that the sum of these custom debts PLUS the payer's own portion exactly matches the `Total Amount` paid before submitting.
 
-### B. Mathematical Balancing (`lib/balances.js`)
+### B. The Expense API Payload
+The `POST api/projects/[id]/expenses` route expects an array of explicit debt objects.
+
+**Payload Schema:**
+```json
+[
+  {
+    "description": "String",
+    "enteredAmount": "Number (The total receipt cost)",
+    "payerId": "Number (User ID of who paid)",
+    "borrowerId": "Number (User ID of who owes)",
+    "amount": "Number (The specific fractional debt owed)",
+    "expenseDate": "YYYY-MM-DD"
+  }
+]
+```
+
+### C. Mathematical Balancing (`lib/balances.js`)
 * **`computeBalances`:** Calculates a net total for each user by subtracting what they owe as a `borrower_id` and adding what they are owed as a `payer_id`.
-* **`simplifyDebts`:** Uses a greedy algorithm to match "creditors" (positive balance) with "debtors" (negative balance) to generate a clean "Settlement Suggestion" string (e.g., "User X pays User Y ₹500").
-* Balances recalculate on the fly whenever the frontend calls the `api/projects/[id]` GET route.
+* **`simplifyDebts`:** Uses a greedy algorithm to match "creditors" (positive balance) with "debtors" (negative balance) to generate a clean "Settlement Suggestion" string.
 
-### C. CSV Mass Upload Format
-The application supports bulk importing via CSV. The frontend parser (`handleCSVUpload`) expects a strict comma-separated string. 
+### D. CSV Mass Upload Format
+The application supports bulk importing via CSV for complex multi-member trips. The parser relies on strict numeric IDs.
 * **Rule 1:** The CSV *must* have a header row.
 * **Rule 2:** Dates *must* be strictly formatted as `YYYY-MM-DD`.
-* **Rule 3:** Commas are strictly forbidden inside the `Description` field, as the parser uses a simplistic `.split(",")`.
-* **Schema:** `Date,Description,Amount,Type`
+* **Rule 3:** Commas are strictly forbidden inside the `Description` field.
+* **Schema:** `Date,Description,TotalAmount,PayerId,BorrowerId,DebtAmount`
 
-**Example valid CSV:**
-```csv
-Date,Description,Amount,Type
-2026-04-15,Dinner at Goa,1500,A_PAID_SPLIT
-2026-04-16,Hotel Booking,4000,B_PAID_SPLIT
-2026-04-17,Flight Ticket for User A,3500,B_OWE_FULL
-```
-
-### D. Next.js 15 Promise Params
-Because this project uses Next.js 15, dynamic route parameters (like `[id]`) are **Promises**. 
-* **Backend:** Every dynamic API route begins with: `const { id } = await params;`
-* **Frontend:** Dynamic pages use the client-side hook: `const params = useParams(); const id = params?.id;`
-
-### E. API Wrapper
-The frontend uses a custom, robust `api()` wrapper for all `fetch` calls. It is designed to safely catch empty responses, gracefully parse JSON, and explicitly throw `Server Error: [Status]` to prevent opaque "Unexpected end of JSON input" crashes.
-```
+*(Note: A multi-person split requires multiple lines in the CSV, one for each specific debt relationship).*

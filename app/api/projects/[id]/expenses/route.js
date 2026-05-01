@@ -10,45 +10,36 @@ export async function POST(request, { params }) {
   const items = Array.isArray(body) ? body : [body];
   const rowsToInsert = [];
 
+  // Collect all unique user IDs that need to be validated
+  const allUserIds = [...new Set(items.flatMap(item => [Number(item.payerId), Number(item.borrowerId)]))];
+  
+  // Single membership check for all users in the request
+  const membershipRows = await supa("/project_members", {
+    query: {
+      project_id: `eq.${projectId}`,
+      user_id: `in.${toInFilter(allUserIds)}`,
+      select: "user_id",
+    },
+  });
+  const validUserIds = new Set(membershipRows.map((r) => r.user_id));
+
   for (const item of items) {
-    const enteredAmount = Number(item.amount);
+    const enteredAmount = Number(item.enteredAmount);
     const description = String(item.description || "").trim();
-    const type = String(item.type || "");
     const expenseDate = String(item.expenseDate || "").trim();
-    const memberAId = Number(item.memberAId);
-    const memberBId = Number(item.memberBId);
+    const payerId = Number(item.payerId);
+    const borrowerId = Number(item.borrowerId);
+    const amount = Number(item.amount);
 
     if (!enteredAmount || enteredAmount <= 0) return NextResponse.json({ error: "Amount must be greater than 0" }, { status: 400 });
     if (!expenseDate) return NextResponse.json({ error: "Expense date is required" }, { status: 400 });
     if (!description) return NextResponse.json({ error: "Description is required" }, { status: 400 });
-    if (!memberAId || !memberBId) return NextResponse.json({ error: "Please choose two users" }, { status: 400 });
-    if (memberAId === memberBId) return NextResponse.json({ error: "Please choose two different users" }, { status: 400 });
+    if (!payerId || !borrowerId) return NextResponse.json({ error: "Please choose payer and borrower" }, { status: 400 });
+    if (payerId === borrowerId) return NextResponse.json({ error: "Payer and borrower must be different" }, { status: 400 });
 
-    const membershipRows = await supa("/project_members", {
-      query: {
-        project_id: `eq.${projectId}`,
-        user_id: `in.${toInFilter([memberAId, memberBId])}`,
-        select: "user_id",
-      },
-    });
-    if (!membershipRows || membershipRows.length !== 2) {
+    // Verify both users are project members using the pre-fetched set
+    if (!validUserIds.has(payerId) || !validUserIds.has(borrowerId)) {
       return NextResponse.json({ error: "Both users must be project members" }, { status: 400 });
-    }
-
-    let payerId;
-    let borrowerId;
-    let amount;
-
-    if (type === "A_PAID_SPLIT") {
-      payerId = memberAId; borrowerId = memberBId; amount = enteredAmount / 2;
-    } else if (type === "A_OWE_FULL") {
-      payerId = memberBId; borrowerId = memberAId; amount = enteredAmount;
-    } else if (type === "B_PAID_SPLIT") {
-      payerId = memberBId; borrowerId = memberAId; amount = enteredAmount / 2;
-    } else if (type === "B_OWE_FULL") {
-      payerId = memberAId; borrowerId = memberBId; amount = enteredAmount;
-    } else {
-      return NextResponse.json({ error: "Invalid expense type" }, { status: 400 });
     }
 
     rowsToInsert.push({
@@ -58,7 +49,7 @@ export async function POST(request, { params }) {
       entered_amount: Number(enteredAmount.toFixed(2)),
       payer_id: payerId,
       borrower_id: borrowerId,
-      type,
+      type: "MANUAL",
       expense_date: expenseDate,
     });
   }
