@@ -346,16 +346,35 @@ export default function ProjectPage() {
                 <strong>{new Date(date).toLocaleDateString()}</strong>
               </div>
               <ul>
-                {groupedExpenses[date].map((exp) => (
-                  <li key={exp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div>
-                      <div><strong>{exp.description}</strong></div>
-                      <div className="muted">Total: Rs {Number(exp.enteredAmount).toFixed(2)} | Share transfer: Rs {Number(exp.amount).toFixed(2)}</div>
-                      <div>{exp.borrowerName} owes {exp.payerName}</div>
-                    </div>
-                    <button className="danger" onClick={() => deleteExpense(exp.id)}>Delete</button>
-                  </li>
-                ))}
+                {groupedExpenses[date].map((exp) => {
+                  // Determine the exact wording based on the transaction type
+                  let typeDescription = "";
+                  if (exp.type === "A_OWE_FULL" || exp.type === "B_OWE_FULL") {
+                    typeDescription = `🎯 Fully owed by ${exp.borrowerName} (Personal)`;
+                  } else {
+                    typeDescription = `🤝 Split equally`;
+                  }
+
+                  return (
+                    <li key={exp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <strong>{exp.description}</strong>
+                          <span style={{ fontSize: "11px", backgroundColor: "#e5e7eb", padding: "2px 6px", borderRadius: "10px", color: "#4b5563" }}>
+                            {typeDescription}
+                          </span>
+                        </div>
+                        <div className="muted" style={{ marginTop: "4px" }}>
+                          Total: ₹{Number(exp.enteredAmount).toFixed(2)} | {exp.borrowerName} owes ₹{Number(exp.amount).toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: "13px", color: "#059669", marginTop: "2px" }}>
+                          Paid by {exp.payerName}
+                        </div>
+                      </div>
+                      <button className="danger" onClick={() => deleteExpense(exp.id)} style={{ marginLeft: "12px" }}>Delete</button>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))
