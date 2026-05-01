@@ -31,6 +31,16 @@ For migrating old trips or entering massive amounts of data at once, SplitMoney 
 * Instantly upload 50+ transactions at once.
 * The CSV parser automatically maps your data and applies the correct math based on transaction type.
 
+**Required CSV Format:**
+The first row MUST be headers. Commas are not allowed in the description field.
+```csv
+Date,Description,Amount,Type
+2026-04-15,Dinner at Goa,1500,A_PAID_SPLIT
+2026-04-16,Hotel Booking,4000,B_PAID_SPLIT
+2026-04-17,Flight Ticket,3500,B_OWE_FULL
+```
+*(Types mapping: `A_PAID_SPLIT`, `B_PAID_SPLIT`, `A_OWE_FULL`, `B_OWE_FULL`)*
+
 ### 5. Smart Debt Simplification & Balances
 You don't need to do any math. As you add or delete expenses, SplitMoney runs a greedy simplification algorithm behind the scenes to calculate:
 * **Total Trip Cost:** A quick-glance sum of every transaction entered.

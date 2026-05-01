@@ -110,10 +110,18 @@ The expense tracking is strictly optimized for **exactly 2 members per project**
 * Balances recalculate on the fly whenever the frontend calls the `api/projects/[id]` GET route.
 
 ### C. CSV Mass Upload Format
-The application supports bulk importing via CSV. The CSV *must* have a header row and follow this exact schema:
-`Date,Description,Amount,Type`
-Example row: `2026-04-15,Dinner at Goa,1500,A_PAID_SPLIT`
-*(Commas are strictly forbidden inside the Description field during upload).*
+The application supports bulk importing via CSV. The frontend parser (`handleCSVUpload`) expects a strict comma-separated string. 
+* **Rule 1:** The CSV *must* have a header row.
+* **Rule 2:** Commas are strictly forbidden inside the `Description` field, as the parser uses a simplistic `.split(",")`.
+* **Schema:** `Date,Description,Amount,Type`
+
+**Example valid CSV:**
+```csv
+Date,Description,Amount,Type
+2026-04-15,Dinner at Goa,1500,A_PAID_SPLIT
+2026-04-16,Hotel Booking,4000,B_PAID_SPLIT
+2026-04-17,Flight Ticket for User A,3500,B_OWE_FULL
+```
 
 ### D. Next.js 15 Promise Params
 Because this project uses Next.js 15, dynamic route parameters (like `[id]`) are **Promises**. 

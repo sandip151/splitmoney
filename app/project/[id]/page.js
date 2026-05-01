@@ -342,7 +342,22 @@ export default function ProjectPage() {
             <input type="file" name="csvFile" accept=".csv" required disabled={!canAddExpense} style={{ background: "#fff" }} />
             <button type="submit" className="secondary" disabled={!canAddExpense}>Upload CSV Data</button>
           </form>
-          <p className="muted" style={{ fontSize: "11px", marginTop: "8px" }}>Format: <code>Date,Description,Amount,Type</code><br/>(A is 1st member, B is 2nd)</p>
+          
+          <details style={{ marginTop: "12px", fontSize: "12px", color: "#4b5563" }}>
+            <summary style={{ cursor: "pointer", fontWeight: "bold", color: "#2563eb", outline: "none" }}>ℹ️ How to format your CSV</summary>
+            <div style={{ marginTop: "8px", padding: "10px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "6px" }}>
+              <p style={{ margin: "0 0 6px 0" }}>1. Create a file with exactly these 4 headers:</p>
+              <code style={{ display: "block", background: "#f3f4f6", padding: "6px", marginBottom: "10px", borderRadius: "4px" }}>Date,Description,Amount,Type</code>
+              <p style={{ margin: "0 0 4px 0" }}>2. <strong>Type</strong> must be exactly one of these codes:</p>
+              <ul style={{ margin: 0, paddingLeft: "16px", listStyleType: "circle", lineHeight: "1.6" }}>
+                <li><code>A_PAID_SPLIT</code> (1st member paid, split 50/50)</li>
+                <li><code>B_PAID_SPLIT</code> (2nd member paid, split 50/50)</li>
+                <li><code>A_OWE_FULL</code> (2nd member paid fully for 1st)</li>
+                <li><code>B_OWE_FULL</code> (1st member paid fully for 2nd)</li>
+              </ul>
+              <p style={{ margin: "10px 0 0 0", color: "#dc2626", fontWeight: "bold" }}>* Do NOT use commas inside your descriptions.</p>
+            </div>
+          </details>
         </div>
       </div>
     </>
