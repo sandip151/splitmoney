@@ -348,7 +348,8 @@ export default function ProjectPage() {
             <div style={{ marginTop: "8px", padding: "10px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "6px" }}>
               <p style={{ margin: "0 0 6px 0" }}>1. Create a file with exactly these 4 headers:</p>
               <code style={{ display: "block", background: "#f3f4f6", padding: "6px", marginBottom: "10px", borderRadius: "4px" }}>Date,Description,Amount,Type</code>
-              <p style={{ margin: "0 0 4px 0" }}>2. <strong>Type</strong> must be exactly one of these codes:</p>
+              <p style={{ margin: "0 0 6px 0" }}>2. <strong>Date</strong> must be formatted as <code>YYYY-MM-DD</code> (e.g., 2026-04-15).</p>
+              <p style={{ margin: "0 0 4px 0" }}>3. <strong>Type</strong> must be exactly one of these codes:</p>
               <ul style={{ margin: 0, paddingLeft: "16px", listStyleType: "circle", lineHeight: "1.6" }}>
                 <li><code>A_PAID_SPLIT</code> (1st member paid, split 50/50)</li>
                 <li><code>B_PAID_SPLIT</code> (2nd member paid, split 50/50)</li>

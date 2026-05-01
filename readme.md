@@ -32,7 +32,7 @@ For migrating old trips or entering massive amounts of data at once, SplitMoney 
 * The CSV parser automatically maps your data and applies the correct math based on transaction type.
 
 **Required CSV Format:**
-The first row MUST be headers. Commas are not allowed in the description field.
+The first row MUST be headers. Dates must be formatted as `YYYY-MM-DD`. Commas are not allowed in the description field.
 ```csv
 Date,Description,Amount,Type
 2026-04-15,Dinner at Goa,1500,A_PAID_SPLIT

@@ -112,7 +112,8 @@ The expense tracking is strictly optimized for **exactly 2 members per project**
 ### C. CSV Mass Upload Format
 The application supports bulk importing via CSV. The frontend parser (`handleCSVUpload`) expects a strict comma-separated string. 
 * **Rule 1:** The CSV *must* have a header row.
-* **Rule 2:** Commas are strictly forbidden inside the `Description` field, as the parser uses a simplistic `.split(",")`.
+* **Rule 2:** Dates *must* be strictly formatted as `YYYY-MM-DD`.
+* **Rule 3:** Commas are strictly forbidden inside the `Description` field, as the parser uses a simplistic `.split(",")`.
 * **Schema:** `Date,Description,Amount,Type`
 
 **Example valid CSV:**
