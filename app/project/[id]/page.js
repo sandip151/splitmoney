@@ -347,31 +347,34 @@ export default function ProjectPage() {
               </div>
               <ul>
                 {groupedExpenses[date].map((exp) => {
-                  // Determine the exact wording based on the transaction type
-                  let typeDescription = "";
-                  if (exp.type === "A_OWE_FULL" || exp.type === "B_OWE_FULL") {
-                    typeDescription = `🎯 Fully owed by ${exp.borrowerName} (Personal)`;
-                  } else {
-                    typeDescription = `🤝 Split equally`;
-                  }
+                  const isFullyOwed = exp.type === "A_OWE_FULL" || exp.type === "B_OWE_FULL";
+                  const typeDescription = isFullyOwed 
+                    ? `🎯 Personal Purchase` 
+                    : `🤝 Split equally`;
 
                   return (
-                    <li key={exp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <li key={exp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "12px 0", borderBottom: "1px solid #e5e7eb" }}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <strong>{exp.description}</strong>
-                          <span style={{ fontSize: "11px", backgroundColor: "#e5e7eb", padding: "2px 6px", borderRadius: "10px", color: "#4b5563" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                          <strong style={{ fontSize: "16px" }}>{exp.description}</strong>
+                          <span style={{ fontSize: "11px", backgroundColor: "#f3f4f6", padding: "2px 8px", borderRadius: "12px", color: "#4b5563", fontWeight: "500" }}>
                             {typeDescription}
                           </span>
                         </div>
-                        <div className="muted" style={{ marginTop: "4px" }}>
-                          Total: ₹{Number(exp.enteredAmount).toFixed(2)} | {exp.borrowerName} owes ₹{Number(exp.amount).toFixed(2)}
+                        
+                        <div style={{ fontSize: "14px", color: "#111827" }}>
+                          {isFullyOwed ? (
+                            <span><strong>{exp.borrowerName}</strong> owes <strong>₹{Number(exp.amount).toFixed(2)}</strong></span>
+                          ) : (
+                            <span>Total: ₹{Number(exp.enteredAmount).toFixed(2)} <span className="muted" style={{margin: "0 6px"}}>|</span> <strong>{exp.borrowerName}</strong> owes <strong>₹{Number(exp.amount).toFixed(2)}</strong></span>
+                          )}
                         </div>
-                        <div style={{ fontSize: "13px", color: "#059669", marginTop: "2px" }}>
+                        
+                        <div style={{ fontSize: "12px", color: "#059669", marginTop: "4px", fontWeight: "500" }}>
                           Paid by {exp.payerName}
                         </div>
                       </div>
-                      <button className="danger" onClick={() => deleteExpense(exp.id)} style={{ marginLeft: "12px" }}>Delete</button>
+                      <button className="danger" onClick={() => deleteExpense(exp.id)} style={{ marginLeft: "16px", padding: "6px 12px" }}>Delete</button>
                     </li>
                   );
                 })}
