@@ -299,42 +299,58 @@ export default function ProjectPage() {
           <p className="bad">Add at least 2 members to create transactions.</p>
         ) : (
           <form onSubmit={addExpense}>
-            <div style={{ marginBottom: "12px" }}>
-              <label style={{ display: "block", fontSize: "13px", marginBottom: "4px" }}>Who paid?</label>
-              <select name="payerId" required style={{ width: "100%", padding: "8px" }}>
-                <option value="">Select payer</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
+              
+              <div style={{ flex: "1 1 140px" }}>
+                <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", color: "#6b7280", fontWeight: "bold" }}>Who paid?</label>
+                <select name="payerId" required style={{ width: "100%" }}>
+                  <option value="">Select payer</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ flex: "2 1 200px" }}>
+                <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", color: "#6b7280", fontWeight: "bold" }}>Description</label>
+                <input name="description" placeholder="e.g., Dinner at Goa" required style={{ width: "100%" }} />
+              </div>
+
+              <div style={{ flex: "1 1 120px" }}>
+                <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", color: "#6b7280", fontWeight: "bold" }}>Total Amount (₹)</label>
+                <input name="amount" type="number" step="0.01" min="0.01" placeholder="0.00" required style={{ width: "100%" }} />
+              </div>
+
+              <div style={{ flex: "1 1 130px" }}>
+                <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", color: "#6b7280", fontWeight: "bold" }}>Date</label>
+                <input name="expenseDate" type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} required style={{ width: "100%" }} />
+              </div>
+
+              <div style={{ flex: "1 1 200px" }}>
+                <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", color: "#6b7280", fontWeight: "bold" }}>Split type:</label>
+                <select name="splitType" value={splitType} onChange={(e) => setSplitType(e.target.value)} style={{ width: "100%" }}>
+                  <option value="equal">Split equally</option>
+                  <option value="custom">Custom amounts</option>
+                </select>
+              </div>
+
             </div>
-            <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-              <input name="description" placeholder="Description (e.g., Dinner)" required style={{ flex: "1 1 150px" }} />
-              <input name="amount" type="number" step="0.01" min="0.01" placeholder="Total amount (₹)" required style={{ width: "140px" }} />
-              <input name="expenseDate" type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} required style={{ width: "130px" }} />
-            </div>
-            <div style={{ marginBottom: "12px" }}>
-              <label style={{ display: "block", fontSize: "13px", marginBottom: "6px" }}>Split type:</label>
-              <select name="splitType" value={splitType} onChange={(e) => setSplitType(e.target.value)} style={{ width: "100%", padding: "8px" }}>
-                <option value="equal">Split equally (among all members)</option>
-                <option value="custom">Custom amounts</option>
-              </select>
-            </div>
+
             {splitType === "custom" && (
-              <div style={{ marginBottom: "12px", padding: "10px", backgroundColor: "#f9fafb", borderRadius: "6px" }}>
+              <div style={{ marginBottom: "16px", padding: "12px", backgroundColor: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
                 <p style={{ margin: "0 0 12px 0", fontSize: "13px", color: "#4b5563" }}>Enter exactly how much each person owes the Payer (must sum to the Total Amount):</p>
                 {members.map((m) => (
-                  <div key={m.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", marginBottom: "8px", borderBottom: "1px dashed #e5e7eb", paddingBottom: "8px" }}>
-                    <span style={{ flex: "1 1 120px", fontSize: "14px", fontWeight: "500" }}>{m.name}</span>
+                  <div key={m.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", marginBottom: "8px", borderBottom: "1px dashed #d1d5db", paddingBottom: "8px" }}>
+                    <span style={{ flex: "1 1 120px", fontSize: "14px", fontWeight: "bold", color: "#111827" }}>{m.name}</span>
                     <div style={{ display: "flex", alignItems: "center" }}>
-                      <span style={{ marginRight: "4px", color: "#6b7280" }}>₹</span>
-                      <input name={`custom_${m.id}`} type="number" step="0.01" min="0" placeholder="0.00" style={{ width: "90px", padding: "6px" }} />
+                      <span style={{ marginRight: "6px", color: "#6b7280", fontWeight: "bold" }}>₹</span>
+                      <input name={`custom_${m.id}`} type="number" step="0.01" min="0" placeholder="0.00" style={{ width: "100px" }} />
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            <button type="submit">Add Transaction</button>
+            <button type="submit" style={{ width: "100%", padding: "10px", fontSize: "15px", fontWeight: "bold" }}>Add Transaction</button>
           </form>
         )}
       </div>
@@ -346,23 +362,36 @@ export default function ProjectPage() {
           <div className="muted">No transactions yet.</div>
         ) : (
           orderedDates.map((date) => (
-            <div key={date} style={{ marginBottom: "16px" }}>
-              <div className="muted" style={{ background: "#f9fafb", borderBottom: "2px solid #e5e7eb", padding: "6px 4px", marginBottom: "8px", fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                <strong>{new Date(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+            <div key={date} style={{ marginBottom: "20px" }}>
+              <div style={{ background: "#e5e7eb", borderRadius: "6px", padding: "6px 10px", marginBottom: "10px", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: "bold", color: "#4b5563" }}>
+                {new Date(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
               </div>
-              <ul>
+              <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
                 {groupedExpenses[date].map((exp) => {
+                  
+                  // DYNAMIC BADGE LOGIC
+                  // If the amount this user owes equals the total receipt, it was a personal purchase!
+                  const isFullyOwed = exp.amount === exp.enteredAmount;
+                  const typeDescription = isFullyOwed ? `🎯 Personal` : `🤝 Shared`;
+
                   return (
-                    <li key={exp.id} style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "space-between", alignItems: "center", padding: "12px 4px", borderBottom: "1px solid #f3f4f6" }}>
+                    <li key={exp.id} style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "space-between", alignItems: "center", padding: "14px 8px", borderBottom: "1px solid #f3f4f6" }}>
                       <div style={{ flex: "1 1 200px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                          <strong style={{ fontSize: "15px", color: "#111827" }}>{exp.description}</strong>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                          <strong style={{ fontSize: "16px", color: "#111827" }}>{exp.description}</strong>
+                          <span style={{ fontSize: "11px", backgroundColor: isFullyOwed ? "#fef2f2" : "#eff6ff", border: isFullyOwed ? "1px solid #fecaca" : "1px solid #bfdbfe", padding: "3px 8px", borderRadius: "12px", color: isFullyOwed ? "#991b1b" : "#1e40af", fontWeight: "bold" }}>
+                            {typeDescription}
+                          </span>
                         </div>
-                        <div style={{ fontSize: "13px", color: "#4b5563" }}>
-                          <span><strong>{exp.borrowerName}</strong> owes <strong>₹{Number(exp.amount).toFixed(2)}</strong> to <strong>{exp.payerName}</strong></span>
+                        <div style={{ fontSize: "14px", color: "#4b5563" }}>
+                          {isFullyOwed ? (
+                            <span><strong>{exp.borrowerName}</strong> owes <strong>₹{Number(exp.amount).toFixed(2)}</strong> to {exp.payerName}</span>
+                          ) : (
+                            <span>Receipt Total: ₹{Number(exp.enteredAmount).toFixed(2)} <span className="muted" style={{ margin: "0 4px" }}>|</span> <strong>{exp.borrowerName}</strong> owes <strong>₹{Number(exp.amount).toFixed(2)}</strong> to {exp.payerName}</span>
+                          )}
                         </div>
                       </div>
-                      <button onClick={() => deleteExpense(exp.id)} style={{ background: "none", border: "none", color: "#dc2626", fontSize: "13px", cursor: "pointer", padding: "4px 8px" }}>Delete</button>
+                      <button onClick={() => deleteExpense(exp.id)} style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "6px", color: "#dc2626", fontSize: "13px", fontWeight: "bold", cursor: "pointer", padding: "6px 12px" }}>Delete</button>
                     </li>
                   );
                 })}
