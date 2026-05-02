@@ -21,7 +21,7 @@ async function api(url, options = {}) {
 
 export default function ProjectPage() {
   const params = useParams();
-  const projectId = Number(params?.id);
+  const projectId = String(params?.id);
   const [allUsers, setAllUsers] = useState([]);
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,7 @@ export default function ProjectPage() {
 
   async function addMember(e) {
     e.preventDefault();
-    const userId = Number(e.target.userId.value);
+    const userId = String(e.target.userId.value);
     if (!userId) return;
     try {
       await api(`/api/projects/${projectId}/members`, { method: "POST", body: JSON.stringify({ userId }) });
@@ -74,9 +74,10 @@ export default function ProjectPage() {
   async function addExpense(e) {
     e.preventDefault();
     const form = e.target;
+    const currentGroupId = window.crypto.randomUUID();
     const description = form.description.value;
     const totalAmount = Number(form.amount.value);
-    const payerId = Number(form.payerId.value);
+    const payerId = String(form.payerId.value);
     const splitType = form.splitType.value;
     const expenseDateVal = expenseDate;
 
@@ -94,10 +95,11 @@ export default function ProjectPage() {
       for (const member of members) {
         if (member.id !== payerId) {
           debts.push({
+            groupId: currentGroupId,
             description,
             enteredAmount: totalAmount,
             payerId,
-            borrowerId: member.id,
+            borrowerId: String(member.id),
             amount: splitAmount,
             expenseDate: expenseDateVal,
           });
@@ -105,12 +107,13 @@ export default function ProjectPage() {
       }
     } else if (splitType.startsWith("full_")) {
       // 2. Quick Option: One specific person owes 100% of the bill
-      const fullOweUserId = Number(splitType.replace("full_", ""));
+      const fullOweUserId = String(splitType.replace("full_", ""));
       if (fullOweUserId === payerId) {
         alert("The Payer cannot owe 100% to themselves (that's just a personal expense with no shared debt).");
         return;
       }
       debts.push({
+        groupId: currentGroupId,
         description,
         enteredAmount: totalAmount,
         payerId,
@@ -129,10 +132,11 @@ export default function ProjectPage() {
           othersDebtSum += customAmount;
           if (customAmount > 0) {
             debts.push({
+              groupId: currentGroupId,
               description,
               enteredAmount: totalAmount,
               payerId,
-              borrowerId: member.id,
+              borrowerId: String(member.id),
               amount: customAmount,
               expenseDate: expenseDateVal,
             });
@@ -190,14 +194,15 @@ export default function ProjectPage() {
       }
 
       const payload = dataLines.map(line => {
-        const [expenseDate, description, totalAmountStr, payerIdStr, borrowerIdStr, amountStr] = line.split(",");
+        const [expenseDate, description, totalAmountStr, payerIdStr, borrowerIdStr, amountStr, groupIdStr] = line.split(",");
         return {
           description: description.trim(),
           enteredAmount: Number(totalAmountStr),
-          payerId: Number(payerIdStr),
-          borrowerId: Number(borrowerIdStr),
+          payerId: String(payerIdStr),
+          borrowerId: String(borrowerIdStr),
           amount: Number(amountStr),
-          expenseDate: expenseDate.trim()
+          expenseDate: expenseDate.trim(),
+          groupId: groupIdStr ? groupIdStr.trim() : window.crypto.randomUUID()
         };
       });
 
@@ -387,22 +392,28 @@ export default function ProjectPage() {
                 {new Date(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
               </div>
               <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
-                {groupedExpenses[date].map((exp) => {
-                  
-                  // DYNAMIC BADGE LOGIC
-                  const debtAmount = Number(exp.amount) || 0;
-                  const totalReceipt = Number(exp.enteredAmount) || 0;
-                  
+                {(() => {
+                  // 1. Group perfectly by the unique database group_id
+                  const receipts = {};
+                  groupedExpenses[date].forEach(exp => {
+                    // Group exactly by the database groupId
+                    const receiptKey = exp.groupId;
+                    if (!receipts[receiptKey]) receipts[receiptKey] = [];
+                    receipts[receiptKey].push(exp);
+                  });
+                  return Object.values(receipts).map((receiptItems) => {
+                    const exp = receiptItems[0];
+                    const totalReceipt = Number(exp.enteredAmount) || 0;
+                    const debtAmount = receiptItems.reduce((sum, item) => sum + Number(item.amount), 0);
                   // If the user's specific debt equals the total receipt cost, they owe the whole thing.
                   const isFullyOwed = totalReceipt > 0 && Math.abs(debtAmount - totalReceipt) < 0.01;
                   
                   // Calculate the percentage share for the badge
                   const percentage = totalReceipt > 0 ? Math.round((debtAmount / totalReceipt) * 100) : 0;
-                  
                   const typeDescription = isFullyOwed ? `🎯 Personal` : `🤝 Shared (${percentage}%)`;
 
                   return (
-                    <li key={exp.id} style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "space-between", alignItems: "center", padding: "14px 8px", borderBottom: "1px solid #f3f4f6" }}>
+                      <li key={exp.groupId} style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "space-between", alignItems: "center", padding: "14px 8px", borderBottom: "1px solid #f3f4f6" }}>
                       <div style={{ flex: "1 1 200px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
                           <strong style={{ fontSize: "16px", color: "#111827" }}>{exp.description}</strong>
@@ -411,17 +422,18 @@ export default function ProjectPage() {
                           </span>
                         </div>
                         <div style={{ fontSize: "14px", color: "#4b5563" }}>
-                          {isFullyOwed ? (
-                            <span><strong>{exp.borrowerName}</strong> owes <strong>₹{debtAmount.toFixed(2)}</strong> to {exp.payerName}</span>
-                          ) : (
-                            <span>Receipt Total: ₹{totalReceipt.toFixed(2)} <span className="muted" style={{ margin: "0 4px" }}>|</span> <strong>{exp.borrowerName}</strong> owes <strong>₹{debtAmount.toFixed(2)}</strong> to {exp.payerName}</span>
-                          )}
+                            {receiptItems.map(item => (
+                              <div key={item.id}>
+                                <strong>{item.borrowerName}</strong> owes <strong>₹{Number(item.amount).toFixed(2)}</strong> to {item.payerName}
+                              </div>
+                            ))}
                         </div>
                       </div>
                       <button onClick={() => deleteExpense(exp.id)} style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "6px", color: "#dc2626", fontSize: "13px", fontWeight: "bold", cursor: "pointer", padding: "6px 12px" }}>Delete</button>
                     </li>
                   );
-                })}
+                  });
+                })()}
               </ul>
             </div>
           ))

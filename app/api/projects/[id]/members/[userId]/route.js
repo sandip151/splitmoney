@@ -3,8 +3,8 @@ import { supa } from "@/lib/supabaseRest";
 
 export async function DELETE(_request, { params }) {
   const { id, userId } = await params;
-  const projectId = Number(id);
-  const resolvedUserId = Number(userId);
+  const projectId = String(id);
+  const resolvedUserId = String(userId);
 
   const hasExpense = await supa("/expenses", {
     query: {

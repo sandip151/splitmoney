@@ -3,7 +3,7 @@ import { supa, toInFilter } from "@/lib/supabaseRest";
 
 export async function POST(request, { params }) {
   const { id } = await params;
-  const projectId = Number(id);
+  const projectId = String(id);
   const body = await request.json().catch(() => ({}));
 
   // Determine if we are receiving one expense (form) or an array (CSV)
@@ -11,7 +11,7 @@ export async function POST(request, { params }) {
   const rowsToInsert = [];
 
   // Collect all unique user IDs that need to be validated
-  const allUserIds = [...new Set(items.flatMap(item => [Number(item.payerId), Number(item.borrowerId)]))];
+  const allUserIds = [...new Set(items.flatMap(item => [String(item.payerId), String(item.borrowerId)]))];
   
   // Single membership check for all users in the request
   const membershipRows = await supa("/project_members", {
@@ -23,13 +23,19 @@ export async function POST(request, { params }) {
   });
   const validUserIds = new Set(membershipRows.map((r) => r.user_id));
 
+  // Generate a fallback group ID just in case it's missing
+  const defaultGroupId = crypto.randomUUID();
+
   for (const item of items) {
     const enteredAmount = Number(item.enteredAmount);
     const description = String(item.description || "").trim();
     const expenseDate = String(item.expenseDate || "").trim();
-    const payerId = Number(item.payerId);
-    const borrowerId = Number(item.borrowerId);
+    const payerId = String(item.payerId);
+    const borrowerId = String(item.borrowerId);
     const amount = Number(item.amount);
+
+    // Explicitly grab the groupId!
+    const groupId = String(item.groupId || defaultGroupId);
 
     if (!enteredAmount || enteredAmount <= 0) return NextResponse.json({ error: "Amount must be greater than 0" }, { status: 400 });
     if (!expenseDate) return NextResponse.json({ error: "Expense date is required" }, { status: 400 });
@@ -44,6 +50,7 @@ export async function POST(request, { params }) {
 
     rowsToInsert.push({
       project_id: projectId,
+      group_id: groupId, // Save to database
       description,
       amount: Number(amount.toFixed(2)),
       entered_amount: Number(enteredAmount.toFixed(2)),

@@ -4,7 +4,7 @@ import { computeBalances, simplifyDebts } from "@/lib/balances";
 
 export async function GET(_request, { params }) {
   const { id } = await params;
-  const projectId = Number(id);
+  const projectId = String(id);
 
   const projects = await supa("/projects", {
     query: { id: `eq.${projectId}`, select: "id,name" },
@@ -30,7 +30,7 @@ export async function GET(_request, { params }) {
     query: {
       project_id: `eq.${projectId}`,
       select:
-        "id,project_id,description,amount,entered_amount,payer_id,borrower_id,type,expense_date,created_at",
+        "id,group_id,project_id,description,amount,entered_amount,payer_id,borrower_id,type,expense_date,created_at",
       order: "expense_date.desc,created_at.desc",
     },
   });
@@ -43,6 +43,7 @@ export async function GET(_request, { params }) {
   const userById = new Map(members.map((m) => [m.id, m]));
   const apiExpenses = visibleExpenses.map((e) => ({
     id: e.id,
+    groupId: e.group_id,
     projectId: e.project_id,
     description: e.description,
     amount: Number(Number(e.amount).toFixed(2)),
@@ -70,7 +71,7 @@ export async function GET(_request, { params }) {
 
 export async function PUT(request, { params }) {
   const { id } = await params;
-  const projectId = Number(id);
+  const projectId = String(id);
   const body = await request.json().catch(() => ({}));
   const name = String(body.name || "").trim();
   if (!name) return NextResponse.json({ error: "Project name is required" }, { status: 400 });
@@ -89,7 +90,7 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(_request, { params }) {
   const { id } = await params;
-  const projectId = Number(id);
+  const projectId = String(id);
   await supa("/projects", { method: "DELETE", query: { id: `eq.${projectId}` } });
   return NextResponse.json({ success: true });
 }
