@@ -166,7 +166,6 @@ export default function ProjectPage() {
   }
 
   async function deleteExpense(expenseId) {
-    if (!confirm("Delete this transaction? This will automatically recalculate all balances.")) return;
     try {
       await api(`/api/projects/${projectId}/expenses/${expenseId}`, { method: "DELETE" });
       await load();
@@ -405,6 +404,7 @@ export default function ProjectPage() {
                     const exp = receiptItems[0];
                     const totalReceipt = Number(exp.enteredAmount) || 0;
                     const debtAmount = receiptItems.reduce((sum, item) => sum + Number(item.amount), 0);
+
                   // If the user's specific debt equals the total receipt cost, they owe the whole thing.
                   const isFullyOwed = totalReceipt > 0 && Math.abs(debtAmount - totalReceipt) < 0.01;
                   
@@ -413,25 +413,38 @@ export default function ProjectPage() {
                   const typeDescription = isFullyOwed ? `🎯 Personal` : `🤝 Shared (${percentage}%)`;
 
                   return (
-                      <li key={exp.groupId} style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "space-between", alignItems: "center", padding: "14px 8px", borderBottom: "1px solid #f3f4f6" }}>
+                      <li key={exp.groupId} style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "space-between", alignItems: "flex-start", padding: "14px 8px", borderBottom: "1px solid #f3f4f6" }}>
                       <div style={{ flex: "1 1 200px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
                           <strong style={{ fontSize: "16px", color: "#111827" }}>{exp.description}</strong>
                           <span style={{ fontSize: "11px", backgroundColor: isFullyOwed ? "#fef2f2" : "#eff6ff", border: isFullyOwed ? "1px solid #fecaca" : "1px solid #bfdbfe", padding: "3px 8px", borderRadius: "12px", color: isFullyOwed ? "#991b1b" : "#1e40af", fontWeight: "bold" }}>
                             {typeDescription}
                           </span>
                         </div>
-                        <div style={{ fontSize: "14px", color: "#4b5563" }}>
-                            {receiptItems.map(item => (
-                              <div key={item.id}>
-                                <strong>{item.borrowerName}</strong> owes <strong>₹{Number(item.amount).toFixed(2)}</strong> to {item.payerName}
-                              </div>
-                            ))}
+                          {/* RESTORED: The Total Paid Header */}
+                          <div style={{ fontSize: "13px", color: "#4b5563", marginBottom: "8px" }}>
+                            Total: <strong>₹{totalReceipt.toFixed(2)}</strong> paid by <strong>{exp.payerName}</strong>
+                          </div>
+                          {/* The Debt Breakdown */}
+                          <div style={{ paddingLeft: "12px", borderLeft: "2px solid #e5e7eb", display: "flex", flexDirection: "column", gap: "4px" }}>
+                            {receiptItems.map(item => {
+                              const itemDebt = Number(item.amount) || 0;
+                              const itemPct = totalReceipt > 0 ? Math.round((itemDebt / totalReceipt) * 100) : 0;
+                              return (
+                                <div key={item.id} style={{ fontSize: "13px", color: "#4b5563" }}>
+                                  ↳ <strong>{item.borrowerName}</strong> owes <strong>₹{itemDebt.toFixed(2)}</strong> <span className="muted">({itemPct}%)</span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                      <button onClick={() => deleteExpense(exp.id)} style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "6px", color: "#dc2626", fontSize: "13px", fontWeight: "bold", cursor: "pointer", padding: "6px 12px" }}>Delete</button>
-                    </li>
-                  );
+                        <button onClick={() => {
+                          if(confirm("Delete this entire receipt?")) {
+                            receiptItems.forEach(e => deleteExpense(e.id));
+                          }
+                        }} style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "6px", color: "#dc2626", fontSize: "13px", fontWeight: "bold", cursor: "pointer", padding: "6px 12px" }}>Delete</button>
+                      </li>
+                    );
                   });
                 })()}
               </ul>

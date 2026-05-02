@@ -97,7 +97,12 @@ export default function UsersPage() {
             {users.map((u) => (
               <li key={u.id}>
                 <div className="row">
-                  <strong>{u.name}</strong>
+                  <div>
+                    <strong>{u.name}</strong>
+                    <div className="muted" style={{ fontSize: "11px", fontFamily: "monospace", marginTop: "4px" }}>
+                      ID: {u.id}
+                    </div>
+                  </div>
                   <div>
                     <button className="secondary" type="button" onClick={() => editUser(u)}>
                       Edit
