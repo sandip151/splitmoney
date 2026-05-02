@@ -89,7 +89,7 @@ export default function ProjectPage() {
     const debts = [];
     
     if (splitType === "equal") {
-      // Split equally among all members except payer
+      // 1. Split equally among all members except payer
       const splitAmount = totalAmount / members.length;
       for (const member of members) {
         if (member.id !== payerId) {
@@ -103,10 +103,24 @@ export default function ProjectPage() {
           });
         }
       }
+    } else if (splitType.startsWith("full_")) {
+      // 2. Quick Option: One specific person owes 100% of the bill
+      const fullOweUserId = Number(splitType.replace("full_", ""));
+      if (fullOweUserId === payerId) {
+        alert("The Payer cannot owe 100% to themselves (that's just a personal expense with no shared debt).");
+        return;
+      }
+      debts.push({
+        description,
+        enteredAmount: totalAmount,
+        payerId,
+        borrowerId: fullOweUserId,
+        amount: totalAmount,
+        expenseDate: expenseDateVal,
+      });
     } else {
-      // Custom split - read custom amounts for each member
+      // 3. Custom split - read custom amounts for each member
       let othersDebtSum = 0;
-      // Get the payer's individual share from the form to complete the math
       const payerShare = Number(form[`custom_${payerId}`]?.value || 0);
       
       for (const member of members) {
@@ -126,7 +140,6 @@ export default function ProjectPage() {
         }
       }
       
-      // Total check: Sum of everyone's share (including payer) must = Total Receipt
       const totalAllocated = othersDebtSum + payerShare;
       if (Math.abs(totalAllocated - totalAmount) > 0.01) {
          alert(`Error: Total allocated (₹${totalAllocated.toFixed(2)}) doesn't match receipt (₹${totalAmount.toFixed(2)}).`);
@@ -328,9 +341,16 @@ export default function ProjectPage() {
 
               <div style={{ flex: "1 1 200px" }}>
                 <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", color: "#6b7280", fontWeight: "bold" }}>Split type:</label>
-                <select name="splitType" value={splitType} onChange={(e) => setSplitType(e.target.value)} style={{ width: "100%" }}>
+                <select name="splitType" value={splitType} onChange={(e) => setSplitType(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #d1d5db" }}>
                   <option value="equal">Split equally</option>
-                  <option value="custom">Custom amounts</option>
+                  <option value="custom">Custom exact amounts</option>
+                  <optgroup label="Someone owes 100%">
+                    {members.map((m) => (
+                      <option key={`full_${m.id}`} value={`full_${m.id}`}>
+                        {m.name} owes the full amount
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
 
@@ -370,9 +390,16 @@ export default function ProjectPage() {
                 {groupedExpenses[date].map((exp) => {
                   
                   // DYNAMIC BADGE LOGIC
-                  // If the amount this user owes equals the total receipt, it was a personal purchase!
-                  const isFullyOwed = exp.amount === exp.enteredAmount;
-                  const typeDescription = isFullyOwed ? `🎯 Personal` : `🤝 Shared`;
+                  const debtAmount = Number(exp.amount) || 0;
+                  const totalReceipt = Number(exp.enteredAmount) || 0;
+                  
+                  // If the user's specific debt equals the total receipt cost, they owe the whole thing.
+                  const isFullyOwed = totalReceipt > 0 && Math.abs(debtAmount - totalReceipt) < 0.01;
+                  
+                  // Calculate the percentage share for the badge
+                  const percentage = totalReceipt > 0 ? Math.round((debtAmount / totalReceipt) * 100) : 0;
+                  
+                  const typeDescription = isFullyOwed ? `🎯 Personal` : `🤝 Shared (${percentage}%)`;
 
                   return (
                     <li key={exp.id} style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "space-between", alignItems: "center", padding: "14px 8px", borderBottom: "1px solid #f3f4f6" }}>
@@ -385,9 +412,9 @@ export default function ProjectPage() {
                         </div>
                         <div style={{ fontSize: "14px", color: "#4b5563" }}>
                           {isFullyOwed ? (
-                            <span><strong>{exp.borrowerName}</strong> owes <strong>₹{Number(exp.amount).toFixed(2)}</strong> to {exp.payerName}</span>
+                            <span><strong>{exp.borrowerName}</strong> owes <strong>₹{debtAmount.toFixed(2)}</strong> to {exp.payerName}</span>
                           ) : (
-                            <span>Receipt Total: ₹{Number(exp.enteredAmount).toFixed(2)} <span className="muted" style={{ margin: "0 4px" }}>|</span> <strong>{exp.borrowerName}</strong> owes <strong>₹{Number(exp.amount).toFixed(2)}</strong> to {exp.payerName}</span>
+                            <span>Receipt Total: ₹{totalReceipt.toFixed(2)} <span className="muted" style={{ margin: "0 4px" }}>|</span> <strong>{exp.borrowerName}</strong> owes <strong>₹{debtAmount.toFixed(2)}</strong> to {exp.payerName}</span>
                           )}
                         </div>
                       </div>
