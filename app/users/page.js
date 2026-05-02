@@ -98,10 +98,11 @@ export default function UsersPage() {
               <li key={u.id}>
                 <div className="row">
                   <div>
-                    <strong>{u.name}</strong>
-                    <div className="muted" style={{ fontSize: "11px", fontFamily: "monospace", marginTop: "4px" }}>
-                      ID: {u.id}
-                    </div>
+                    <strong style={{ display: "block", marginBottom: "6px", fontSize: "16px" }}>{u.name}</strong>
+                    {/* NEW OVAL BADGE FOR USER UUID */}
+                    <span style={{ fontSize: "11px", backgroundColor: "#f3f4f6", border: "1px solid #d1d5db", padding: "4px 8px", borderRadius: "12px", color: "#4b5563", fontFamily: "monospace" }}>
+                      {u.id}
+                    </span>
                   </div>
                   <div>
                     <button className="secondary" type="button" onClick={() => editUser(u)}>

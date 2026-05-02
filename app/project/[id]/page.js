@@ -253,7 +253,12 @@ export default function ProjectPage() {
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "16px" }}>
         <div>
-          <h1 style={{ marginBottom: "4px" }}>{state.project.name}</h1>
+          <h1 style={{ marginBottom: "6px", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            {state.project.name}
+            <span style={{ fontSize: "12px", backgroundColor: "#f3f4f6", border: "1px solid #d1d5db", padding: "4px 10px", borderRadius: "14px", color: "#4b5563", fontFamily: "monospace", fontWeight: "normal" }}>
+              {state.project.id}
+            </span>
+          </h1>
           <p className={summaryClass} style={{ margin: 0, fontSize: "14px" }}>
             <strong>{summaryText}</strong>
           </p>
@@ -298,7 +303,6 @@ export default function ProjectPage() {
                 color = "#dc2626";
                 bgColor = "#fef2f2";
               }
-              
               return (
                 <div key={b.userId} style={{ padding: "8px 12px", backgroundColor: bgColor, borderRadius: "6px", fontSize: "14px", border: `1px solid ${color}40` }}>
                   <strong>{b.userName}</strong> <span style={{ color: color }}>{text}</span>
@@ -465,9 +469,15 @@ export default function ProjectPage() {
           </form>
           <ul style={{ fontSize: "13px" }}>
             {members.map((m) => (
-              <li key={m.id} style={{ padding: "4px 0", display: "flex", justifyContent: "space-between" }}>
-                <strong>{m.name}</strong>
-                <span onClick={() => removeMember(m.id)} style={{ color: "#dc2626", cursor: "pointer", textDecoration: "underline" }}>Remove</span>
+              <li key={m.id} style={{ padding: "8px 0", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f3f4f6" }}>
+                <div>
+                  <strong style={{ display: "block", color: "#111827", marginBottom: "4px" }}>{m.name}</strong>
+                  {/* OVAL BADGE FOR MEMBER UUID */}
+                  <span style={{ fontSize: "10px", backgroundColor: "#f3f4f6", border: "1px solid #d1d5db", padding: "2px 6px", borderRadius: "10px", color: "#6b7280", fontFamily: "monospace" }}>
+                    {m.id}
+                  </span>
+                </div>
+                <span onClick={() => removeMember(m.id)} style={{ color: "#dc2626", cursor: "pointer", textDecoration: "underline", fontSize: "12px" }}>Remove</span>
               </li>
             ))}
           </ul>

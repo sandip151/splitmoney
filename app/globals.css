@@ -31,6 +31,20 @@ body {
   font-weight: 600;
 }
 
+/* --- Link Styling --- */
+a {
+  color: #2563eb; /* Clean blue */
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+a:visited {
+  color: #2563eb; /* Prevents the ugly purple */
+}
+a:hover {
+  color: #1d4ed8; /* Slightly darker blue on hover */
+  text-decoration: underline;
+}
+
 .card {
   background: #fff;
   border: 1px solid #e5e7eb;

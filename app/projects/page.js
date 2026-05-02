@@ -102,12 +102,9 @@ export default function ProjectsPage() {
                   <div className="row">
                     <div>
                       <Link href={`/project/${p.id}`}>
-                        <strong>{p.name}</strong>
+                        <strong style={{ fontSize: "16px" }}>{p.name}</strong>
                       </Link>
-                      <div className="muted" style={{ fontSize: "11px", fontFamily: "monospace", marginTop: "4px" }}>
-                        ID: {p.id}
-                      </div>
-                      <div className="muted" style={{ marginTop: "4px" }}>
+                      <div className="muted" style={{ marginTop: "4px", fontSize: "13px" }}>
                         {p.memberCount} members | {p.expenseCount} transactions
                       </div>
                     </div>
