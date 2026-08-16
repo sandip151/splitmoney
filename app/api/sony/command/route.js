@@ -6,8 +6,8 @@ export const dynamic = "force-dynamic";
 const IRCC_CODES = {
   Up: "AAAAAQAAAAEAAAB0Aw==",
   Down: "AAAAAQAAAAEAAAB1Aw==",
-  Left: "AAAAAQAAAAEAAAB2Aw==",
-  Right: "AAAAAQAAAAEAAAB3Aw==",
+  Left: "AAAAAQAAAAEAAAA0Aw==",  // Updated from B2Aw==
+  Right: "AAAAAQAAAAEAAAAzAw==", // Updated from B3Aw==
   Confirm: "AAAAAQAAAAEAAABlAw==", // Center / Go / Enter button
   VolumeUp: "AAAAAQAAAAEAAAASAw==",
   VolumeDown: "AAAAAQAAAAEAAAATAw==",
@@ -20,7 +20,8 @@ const IRCC_CODES = {
 
 export async function POST(request) {
   try {
-    const { ip, pin, psk, command } = await request.json();
+    // 1. Accept the cookie from the payload
+    const { ip, pin, psk, cookie, command } = await request.json();
 
     if (!ip || !command) {
       return NextResponse.json({ error: "IP and Command are required" }, { status: 400 });
@@ -45,8 +46,11 @@ export async function POST(request) {
       SOAPACTION: '"urn:schemas-sony-com:service:IRCC:1#X_SendIRCC"',
     };
 
+    // 2. Prioritize the new session Cookie!
     if (psk) {
       headers["X-Auth-PSK"] = psk;
+    } else if (cookie) {
+      headers["Cookie"] = cookie;
     } else if (pin) {
       const credentials = Buffer.from(`:${pin}`).toString("base64");
       headers["Authorization"] = `Basic ${credentials}`;
@@ -74,3 +78,4 @@ export async function POST(request) {
     );
   }
 }
+

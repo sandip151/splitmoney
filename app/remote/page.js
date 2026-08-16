@@ -7,6 +7,7 @@ export default function SonyRemotePage() {
   const [ip, setIp] = useState("");
   const [pin, setPin] = useState("");
   const [psk, setPsk] = useState("");
+  const [tvCookie, setTvCookie] = useState(""); // Add this line
   const [discoveredDevices, setDiscoveredDevices] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
@@ -21,11 +22,13 @@ export default function SonyRemotePage() {
     const savedIp = localStorage.getItem("sony_tv_ip");
     const savedPin = localStorage.getItem("sony_tv_pin");
     const savedPsk = localStorage.getItem("sony_tv_psk");
+    const savedCookie = localStorage.getItem("sony_tv_cookie"); // Add this
 
-    if (savedIp && (savedPin || savedPsk)) {
+    if (savedIp && (savedPin || savedPsk || savedCookie)) { // Update condition
       setIp(savedIp);
       if (savedPin) setPin(savedPin);
       if (savedPsk) setPsk(savedPsk);
+      if (savedCookie) setTvCookie(savedCookie); // Add this
       setStep("remote");
     } else {
       searchDevices();
@@ -108,7 +111,12 @@ export default function SonyRemotePage() {
       localStorage.setItem("sony_tv_ip", ip);
       localStorage.setItem("sony_tv_pin", pin);
 
-      setStep("remote");
+      // Save the session cookie!
+      if (data.cookie) {
+        localStorage.setItem("sony_tv_cookie", data.cookie);
+        setTvCookie(data.cookie);
+      }
+    setStep("remote");
       setStatusMessage("Connected successfully!");
     } catch (err) {
       setErrorMessage(err.message);
@@ -135,7 +143,7 @@ export default function SonyRemotePage() {
       const res = await fetch("/api/sony/command", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ip, pin, psk, command }),
+        body: JSON.stringify({ ip, pin, psk, cookie: tvCookie, command }), // Added cookie
       });
       const data = await res.json();
       if (!res.ok) {
@@ -219,8 +227,10 @@ export default function SonyRemotePage() {
     localStorage.removeItem("sony_tv_ip");
     localStorage.removeItem("sony_tv_pin");
     localStorage.removeItem("sony_tv_psk");
+    localStorage.removeItem("sony_tv_cookie"); // Add this
     setPin("");
     setPsk("");
+    setTvCookie(""); // Add this
     setStep("search");
     setStatusMessage("");
     setErrorMessage("");
@@ -428,3 +438,4 @@ export default function SonyRemotePage() {
     </div>
   );
 }
+

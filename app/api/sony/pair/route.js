@@ -60,9 +60,21 @@ export async function POST(request) {
     // Step 2: Verification of the PIN
     if (action === "verify_pin") {
       if (response.ok) {
+        // 1. Capture the session cookie header from the TV
+        const cookieHeader = response.headers.get("set-cookie");
+        let tvCookie = "";
+
+        // 2. Extract the specific 'auth=...' cookie string
+        if (cookieHeader) {
+          const match = cookieHeader.match(/(auth=[^;]+)/);
+          if (match) tvCookie = match[1];
+          else tvCookie = cookieHeader.split(';')[0]; // Fallback
+        }
+
         return NextResponse.json({
           success: true,
           paired: true,
+          cookie: tvCookie, // Send the extracted cookie to the frontend
           message: "Successfully paired with Sony TV!",
         });
       } else {
@@ -81,3 +93,4 @@ export async function POST(request) {
     );
   }
 }
+
