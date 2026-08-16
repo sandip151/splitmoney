@@ -15,6 +15,7 @@ export default function RootLayout({ children }) {
             <Link href="/">Home</Link>
             <Link href="/projects">Project Management</Link>
             <Link href="/users">User Management</Link>
+            <Link href="/remote">📺 Sony Remote</Link>
           </div>
           {children}
         </div>

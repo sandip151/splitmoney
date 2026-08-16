@@ -125,3 +125,271 @@ li:last-child {
   color: #dc2626;
 }
 
+/* --- SONY REMOTE CONTROL STYLING --- */
+.remote-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.remote-header {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.status-indicator {
+  font-size: 13px;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.dot.online {
+  width: 10px;
+  height: 10px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.small-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.remote-bezel {
+  width: 320px;
+  background: linear-gradient(145deg, #23272f, #181b20);
+  border-radius: 36px;
+  padding: 24px 20px;
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+}
+
+.remote-top-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.round-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s ease, filter 0.2s ease;
+}
+
+.round-btn:active {
+  transform: scale(0.92);
+}
+
+.danger-btn {
+  background: #ef4444;
+  color: #fff;
+  font-size: 18px;
+}
+
+.voice-btn {
+  background: #3b82f6;
+  color: #fff;
+  font-size: 18px;
+}
+
+.voice-btn.listening {
+  background: #ec4899;
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 0 5px #ec4899; }
+  100% { transform: scale(1.1); box-shadow: 0 0 16px #ec4899; }
+}
+
+.util-btn {
+  background: #374151;
+  color: #e5e7eb;
+  font-size: 11px;
+}
+
+.voice-status-box {
+  width: 100%;
+  background: #1e293b;
+  color: #38bdf8;
+  border: 1px solid #0284c7;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+/* --- D-PAD WHEEL --- */
+.dpad-container {
+  width: 220px;
+  height: 220px;
+  background: #2b303c;
+  border-radius: 50%;
+  position: relative;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.4);
+  margin: 10px 0 20px 0;
+}
+
+.dpad-btn {
+  position: absolute;
+  background: transparent;
+  border: none;
+  color: #d1d5db;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.1s, transform 0.1s;
+}
+
+.dpad-btn:active {
+  color: #38bdf8;
+  transform: scale(1.15);
+}
+
+.dpad-up {
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 44px;
+}
+
+.dpad-down {
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 44px;
+}
+
+.dpad-left {
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 60px;
+}
+
+.dpad-right {
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 60px;
+}
+
+.dpad-center-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 86px;
+  height: 86px;
+  background: linear-gradient(145deg, #374151, #1f2937);
+  border-radius: 50%;
+  border: 2px solid #4b5563;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s, background 0.1s;
+}
+
+.dpad-center-btn:active {
+  transform: translate(-50%, -50%) scale(0.92);
+  background: #2563eb;
+}
+
+/* --- ACTION BUTTONS & VOLUME --- */
+.nav-actions-row {
+  display: flex;
+  width: 100%;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.nav-pill-btn {
+  flex: 1;
+  padding: 12px;
+  background: #374151;
+  color: #f3f4f6;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 13px;
+  border: 1px solid #4b5563;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.nav-pill-btn:active {
+  background: #4b5563;
+  transform: scale(0.96);
+}
+
+.volume-control-box {
+  width: 100%;
+  background: #1f2937;
+  border-radius: 16px;
+  padding: 12px;
+  border: 1px solid #374151;
+}
+
+.vol-title {
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.vol-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.vol-btn {
+  flex: 1;
+  background: #374151;
+  color: #f9fafb;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 10px 0;
+  border-radius: 8px;
+  border: 1px solid #4b5563;
+}
+
+.vol-btn.mute-btn {
+  font-size: 12px;
+  background: #4b5563;
+}
+
+.vol-btn:active {
+  background: #2563eb;
+  transform: scale(0.94);
+}
+
